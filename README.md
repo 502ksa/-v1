@@ -1,6 +1,4 @@
-# -وزارة الداخلية
-
-<!DOCTYPE html>
+# وزارة الداخلية
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -21,6 +19,28 @@ background:#111827;
 padding:18px;
 text-align:center;
 border-bottom:2px solid #2563eb;
+}
+
+.nav{
+display:flex;
+gap:10px;
+justify-content:center;
+padding:10px;
+background:#0f172a;
+}
+
+.nav button{
+flex:1;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#1f2937;
+color:white;
+cursor:pointer;
+}
+
+.nav button.active{
+background:#2563eb;
 }
 
 .container{
@@ -48,20 +68,13 @@ color:white;
 }
 
 button{
-width:100%;
-padding:12px;
-margin-top:8px;
+padding:10px;
+margin-top:6px;
 border:none;
 border-radius:8px;
 background:#2563eb;
 color:white;
-font-weight:bold;
 cursor:pointer;
-}
-
-.small{
-font-size:12px;
-opacity:0.7;
 }
 
 .hidden{display:none;}
@@ -75,19 +88,9 @@ margin:2px;
 font-size:12px;
 }
 
-.warn{
-color:#fbbf24;
-}
-
-.bad{
-color:#ef4444;
-}
-
-.good{
-color:#22c55e;
-}
-
-hr{opacity:0.2;}
+.good{color:#22c55e;}
+.bad{color:#ef4444;}
+.warn{color:#fbbf24;}
 
 </style>
 </head>
@@ -96,64 +99,89 @@ hr{opacity:0.2;}
 
 <header>
 🏛️ وزارة الداخلية - Velora RP
-<div class="small">نظام إدارة الموارد البشرية</div>
 </header>
+
+<!-- NAV -->
+<div class="nav">
+<button onclick="show('apps')" class="active">📄 الطلبات</button>
+<button onclick="show('warns')">⚠ التحذيرات</button>
+<button onclick="show('notes')">📝 الملاحظات</button>
+</div>
 
 <div class="container">
 
-<!-- تسجيل دخول مسؤول -->
+<!-- تسجيل -->
 <div class="card">
 <h3>🔐 دخول المسؤول</h3>
-<button onclick="login()">تسجيل دخول</button>
+<button onclick="login()">دخول</button>
 </div>
 
 <!-- تقديم -->
 <div class="card">
-<h3>📄 نظام التقديم</h3>
+<h3>📄 تقديم</h3>
 
 <input id="name" placeholder="الاسم">
 <input id="age" placeholder="العمر">
-<input id="discord" placeholder="Discord ID">
+<input id="discord" placeholder="Discord">
 <input id="game" placeholder="Game ID">
 <textarea id="exp" placeholder="الخبرات"></textarea>
 
-<button onclick="send()">إرسال طلب</button>
+<button onclick="send()">إرسال</button>
 <p id="msg"></p>
 </div>
 
-<!-- لوحة الوزارة -->
-<div id="panel" class="hidden">
+<!-- الطلبات -->
+<div id="appsPage"></div>
 
-<div class="card">
-<h3>👮 لوحة وزارة الداخلية</h3>
-<div id="list"></div>
-</div>
+<!-- التحذيرات -->
+<div id="warnPage" class="hidden"></div>
 
-</div>
+<!-- الملاحظات -->
+<div id="notePage" class="hidden"></div>
 
 </div>
 
 <script>
 
 let logged=false;
+let page="apps";
 
-/* تسجيل دخول مسؤول */
+/* تنقل */
+function show(p){
+
+page=p;
+
+document.getElementById("appsPage").classList.add("hidden");
+document.getElementById("warnPage").classList.add("hidden");
+document.getElementById("notePage").classList.add("hidden");
+
+if(p=="apps") document.getElementById("appsPage").classList.remove("hidden");
+if(p=="warns") document.getElementById("warnPage").classList.remove("hidden");
+if(p=="notes") document.getElementById("notePage").classList.remove("hidden");
+
+document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+event.target.classList.add("active");
+
+render();
+
+}
+
+/* دخول */
 function login(){
 
-let pass=prompt("ادخل كلمة السر");
+let pass=prompt("0008");
 
 if(pass!="0008"){
-alert("❌ خطأ");
+alert("خطأ");
 return;
 }
 
 logged=true;
-panel.classList.remove("hidden");
-load();
+render();
 
 }
 
-/* إرسال طلب */
+/* إرسال */
 function send(){
 
 let data={
@@ -176,100 +204,98 @@ let arr=JSON.parse(localStorage.getItem("apps")||"[]");
 arr.push(data);
 localStorage.setItem("apps",JSON.stringify(arr));
 
-msg.innerText="✔ تم إرسال الطلب";
+msg.innerText="✔ تم الإرسال";
+
+render();
 
 }
 
-/* تحميل */
-function load(){
+/* عرض */
+function render(){
 
 let arr=JSON.parse(localStorage.getItem("apps")||"[]");
 
-let html="";
+/* الطلبات */
+let appsHtml="";
 
 arr.forEach((a,i)=>{
-
-html+=`
+appsHtml+=`
 <div class="card">
-
-<h3>👤 ${a.name}</h3>
-
-<div class="tag">🎂 ${a.age}</div>
-<div class="tag">🎮 ${a.game}</div>
-<div class="tag">💬 ${a.discord}</div>
-
-<p>📄 ${a.exp}</p>
+<h3>${a.name}</h3>
+<p>${a.game}</p>
+<p>${a.discord}</p>
 
 <p class="${a.status=='accepted'?'good':a.status=='rejected'?'bad':'warn'}">
-📊 الحالة: ${a.status}
+${a.status}
 </p>
 
-<p>⚠ التحذيرات: ${a.warnings}</p>
-
-<button onclick="accept(${i})">✔ قبول</button>
-<button onclick="reject(${i})">✖ رفض</button>
-<button onclick="warn(${i})">⚠ تحذير</button>
-<button onclick="note(${i})">📝 إضافة ملاحظة</button>
-
-<hr>
-
-<div id="notes_${i}"></div>
-
+<button onclick="accept(${i})">قبول</button>
+<button onclick="reject(${i})">رفض</button>
+<button onclick="warn(${i})">تحذير</button>
+<button onclick="note(${i})">ملاحظة</button>
 </div>
 `;
 });
 
-list.innerHTML=html;
+appsPage.innerHTML=appsHtml;
 
-/* عرض الملاحظات */
-arr.forEach((a,i)=>{
-let n="";
-a.notes.forEach(t=>{
-n+=`<div class="tag">📝 ${t}</div>`;
+/* التحذيرات */
+let warnHtml="";
+arr.forEach(a=>{
+warnHtml+=`
+<div class="card">
+<h3>${a.name}</h3>
+<p>⚠ التحذيرات: ${a.warnings}</p>
+</div>
+`;
 });
-let el=document.getElementById("notes_"+i);
-if(el) el.innerHTML=n;
+warnPage.innerHTML=warnHtml;
+
+/* الملاحظات */
+let noteHtml="";
+arr.forEach(a=>{
+noteHtml+=`
+<div class="card">
+<h3>${a.name}</h3>
+${a.notes.map(n=>`<div class="tag">📝 ${n}</div>`).join("")}
+</div>
+`;
 });
+notePage.innerHTML=noteHtml;
 
 }
 
-/* قبول */
+/* وظائف */
 function accept(i){
 let arr=JSON.parse(localStorage.getItem("apps"));
 arr[i].status="accepted";
 localStorage.setItem("apps",JSON.stringify(arr));
-load();
+render();
 }
 
-/* رفض */
 function reject(i){
 let arr=JSON.parse(localStorage.getItem("apps"));
 arr[i].status="rejected";
 localStorage.setItem("apps",JSON.stringify(arr));
-load();
+render();
 }
 
-/* تحذير */
 function warn(i){
 let arr=JSON.parse(localStorage.getItem("apps"));
 arr[i].warnings++;
 localStorage.setItem("apps",JSON.stringify(arr));
-load();
+render();
 }
 
-/* ملاحظة */
 function note(i){
-
-let text=prompt("اكتب الملاحظة");
-
-if(!text) return;
+let t=prompt("اكتب ملاحظة");
+if(!t) return;
 
 let arr=JSON.parse(localStorage.getItem("apps"));
-arr[i].notes.push(text);
+arr[i].notes.push(t);
 
 localStorage.setItem("apps",JSON.stringify(arr));
-load();
-
+render();
 }
 
 </script>
