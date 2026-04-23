@@ -1,4 +1,4 @@
-# وزارة الداخلية
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -6,92 +6,25 @@
 <title>وزارة الداخلية - Velora RP</title>
 
 <style>
-
-body{
-margin:0;
-font-family:Tahoma;
-background:#0b0f17;
-color:white;
-}
-
-header{
-background:#111827;
-padding:18px;
-text-align:center;
-border-bottom:2px solid #2563eb;
-}
-
-.nav{
-display:flex;
-gap:10px;
-justify-content:center;
-padding:10px;
-background:#0f172a;
-}
-
-.nav button{
-flex:1;
-padding:10px;
-border:none;
-border-radius:8px;
-background:#1f2937;
-color:white;
-cursor:pointer;
-}
-
-.nav button.active{
-background:#2563eb;
-}
-
-.container{
-max-width:900px;
-margin:auto;
-padding:15px;
-}
-
-.card{
-background:#161b22;
-padding:15px;
-margin:10px 0;
-border-radius:10px;
-border:1px solid #222c3a;
-}
-
-input,textarea{
-width:100%;
-padding:10px;
-margin:6px 0;
-border:none;
-border-radius:8px;
-background:#0a0e14;
-color:white;
-}
-
-button{
-padding:10px;
-margin-top:6px;
-border:none;
-border-radius:8px;
-background:#2563eb;
-color:white;
-cursor:pointer;
-}
-
-.hidden{display:none;}
-
-.tag{
-display:inline-block;
-padding:4px 8px;
-background:#1f2937;
-border-radius:6px;
-margin:2px;
-font-size:12px;
-}
-
-.good{color:#22c55e;}
-.bad{color:#ef4444;}
-.warn{color:#fbbf24;}
-
+*{box-sizing:border-box}
+body{margin:0;font-family:Tahoma,Arial;background:#0b0f17;color:#fff}
+header{background:#0f172a;padding:16px;text-align:center;border-bottom:2px solid #2563eb}
+.small{font-size:12px;opacity:.7}
+.nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:#0b1220;padding:10px}
+.nav button{padding:10px;border:none;border-radius:8px;background:#1f2937;color:#fff;cursor:pointer}
+.nav button.active{background:#2563eb}
+.container{max-width:1000px;margin:auto;padding:12px}
+.card{background:#111827;border:1px solid #1f2a44;border-radius:10px;padding:12px;margin:10px 0}
+input,textarea{width:100%;padding:10px;margin:6px 0;border:none;border-radius:8px;background:#0a0e14;color:#fff}
+button.primary{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer}
+button.danger{background:#ef4444}
+button.warn{background:#f59e0b}
+button.gray{background:#374151}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.tag{display:inline-block;padding:4px 8px;border-radius:6px;background:#1f2937;margin:2px;font-size:12px}
+.hidden{display:none}
+.list-item{border:1px solid #1f2a44;border-radius:8px;padding:10px;margin:8px 0}
+.right{float:left}
 </style>
 </head>
 
@@ -99,203 +32,255 @@ font-size:12px;
 
 <header>
 🏛️ وزارة الداخلية - Velora RP
+<div class="small">نظام إدارة اللاعبين (تحذيرات / إنذارات / ملاحظات)</div>
 </header>
 
-<!-- NAV -->
 <div class="nav">
-<button onclick="show('apps')" class="active">📄 الطلبات</button>
-<button onclick="show('warns')">⚠ التحذيرات</button>
-<button onclick="show('notes')">📝 الملاحظات</button>
+<button onclick="showPage('players')" class="active">👤 اللاعبين</button>
+<button onclick="showPage('warnings')">⚠ التحذيرات</button>
+<button onclick="showPage('infractions')">🚨 الإنذارات</button>
+<button onclick="showPage('notes')">📝 الملاحظات</button>
+<button onclick="showPage('settings')">⚙ الإعدادات</button>
+<button onclick="logout()">🚪 خروج</button>
 </div>
 
 <div class="container">
 
-<!-- تسجيل -->
-<div class="card">
+<!-- تسجيل دخول -->
+<div id="loginBox" class="card">
 <h3>🔐 دخول المسؤول</h3>
-<button onclick="login()">دخول</button>
+<input id="pass" placeholder="أدخل الباسورد">
+<button class="primary" onclick="login()">دخول</button>
+<p id="loginMsg"></p>
 </div>
 
-<!-- تقديم -->
+<!-- المحتوى -->
+<div id="app" class="hidden">
+
+<!-- إضافة لاعب -->
 <div class="card">
-<h3>📄 تقديم</h3>
-
-<input id="name" placeholder="الاسم">
-<input id="age" placeholder="العمر">
-<input id="discord" placeholder="Discord">
-<input id="game" placeholder="Game ID">
-<textarea id="exp" placeholder="الخبرات"></textarea>
-
-<button onclick="send()">إرسال</button>
-<p id="msg"></p>
+<h3>➕ إضافة لاعب</h3>
+<input id="p_name" placeholder="الاسم">
+<input id="p_id" placeholder="Game ID">
+<input id="p_discord" placeholder="Discord ID">
+<button class="primary" onclick="addPlayer()">إضافة</button>
 </div>
 
-<!-- الطلبات -->
-<div id="appsPage"></div>
+<!-- بحث -->
+<div class="card">
+<input id="search" placeholder="🔎 بحث..." oninput="render()">
+</div>
 
-<!-- التحذيرات -->
-<div id="warnPage" class="hidden"></div>
+<!-- صفحات -->
+<div id="playersPage"></div>
+<div id="warningsPage" class="hidden"></div>
+<div id="infractionsPage" class="hidden"></div>
+<div id="notesPage" class="hidden"></div>
+<div id="settingsPage" class="hidden"></div>
 
-<!-- الملاحظات -->
-<div id="notePage" class="hidden"></div>
+</div>
 
 </div>
 
 <script>
 
-let logged=false;
-let page="apps";
+const ADMIN_PASS = "0008";
+let logged = false;
 
-/* تنقل */
-function show(p){
+/* تسجيل دخول */
+function login(){
+if(pass.value !== ADMIN_PASS){
+loginMsg.innerText = "❌ خطأ";
+return;
+}
+logged = true;
+localStorage.setItem("logged","1");
+loginBox.classList.add("hidden");
+app.classList.remove("hidden");
+render();
+}
 
-page=p;
+/* استرجاع الجلسة */
+window.onload = ()=>{
+if(localStorage.getItem("logged")){
+logged = true;
+loginBox.classList.add("hidden");
+app.classList.remove("hidden");
+render();
+}
+};
 
-document.getElementById("appsPage").classList.add("hidden");
-document.getElementById("warnPage").classList.add("hidden");
-document.getElementById("notePage").classList.add("hidden");
+/* خروج */
+function logout(){
+localStorage.removeItem("logged");
+location.reload();
+}
 
-if(p=="apps") document.getElementById("appsPage").classList.remove("hidden");
-if(p=="warns") document.getElementById("warnPage").classList.remove("hidden");
-if(p=="notes") document.getElementById("notePage").classList.remove("hidden");
+/* تغيير الصفحة */
+function showPage(p){
+["players","warnings","infractions","notes","settings"].forEach(x=>{
+document.getElementById(x+"Page").classList.add("hidden");
+});
+document.getElementById(p+"Page").classList.remove("hidden");
 
 document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
 event.target.classList.add("active");
 
 render();
-
 }
 
-/* دخول */
-function login(){
+/* بيانات */
+function getData(){
+return JSON.parse(localStorage.getItem("players")||"[]");
+}
+function saveData(d){
+localStorage.setItem("players",JSON.stringify(d));
+}
 
-let pass=prompt("0008");
+/* إضافة لاعب */
+function addPlayer(){
+let d = getData();
 
-if(pass!="0008"){
-alert("خطأ");
+if(!p_name.value || !p_id.value){
+alert("عبي البيانات");
 return;
 }
 
-logged=true;
-render();
-
-}
-
-/* إرسال */
-function send(){
-
-let data={
-name:name.value,
-age:age.value,
-discord:discord.value,
-game:game.value,
-exp:exp.value,
-status:"pending",
-warnings:0,
+d.push({
+name:p_name.value,
+id:p_id.value,
+discord:p_discord.value,
+warnings:[],
+infractions:[],
 notes:[]
-};
+});
 
-if(!data.name || !data.age || !data.discord || !data.game || !data.exp){
-alert("عبي كل البيانات");
-return;
-}
-
-let arr=JSON.parse(localStorage.getItem("apps")||"[]");
-arr.push(data);
-localStorage.setItem("apps",JSON.stringify(arr));
-
-msg.innerText="✔ تم الإرسال";
-
+saveData(d);
+p_name.value="";p_id.value="";p_discord.value="";
 render();
-
 }
 
 /* عرض */
 function render(){
 
-let arr=JSON.parse(localStorage.getItem("apps")||"[]");
+let data = getData();
+let q = (search.value||"").toLowerCase();
 
-/* الطلبات */
-let appsHtml="";
+/* اللاعبين */
+playersPage.innerHTML = data.filter(p=>p.name.toLowerCase().includes(q)).map((p,i)=>`
+<div class="list-item">
+<b>${p.name}</b>
+<div class="tag">${p.id}</div>
+<div class="tag">${p.discord}</div>
 
-arr.forEach((a,i)=>{
-appsHtml+=`
-<div class="card">
-<h3>${a.name}</h3>
-<p>${a.game}</p>
-<p>${a.discord}</p>
+<div>⚠ ${p.warnings.length} | 🚨 ${p.infractions.length}</div>
 
-<p class="${a.status=='accepted'?'good':a.status=='rejected'?'bad':'warn'}">
-${a.status}
-</p>
-
-<button onclick="accept(${i})">قبول</button>
-<button onclick="reject(${i})">رفض</button>
-<button onclick="warn(${i})">تحذير</button>
-<button onclick="note(${i})">ملاحظة</button>
+<div class="row">
+<button class="warn" onclick="addWarning(${i})">تحذير</button>
+<button class="danger" onclick="addInfraction(${i})">إنذار</button>
+<button class="gray" onclick="addNote(${i})">ملاحظة</button>
+<button class="danger" onclick="removePlayer(${i})">حذف</button>
 </div>
-`;
-});
-
-appsPage.innerHTML=appsHtml;
+</div>
+`).join("");
 
 /* التحذيرات */
-let warnHtml="";
-arr.forEach(a=>{
-warnHtml+=`
-<div class="card">
-<h3>${a.name}</h3>
-<p>⚠ التحذيرات: ${a.warnings}</p>
+warningsPage.innerHTML = data.map(p=>`
+<div class="list-item">
+<b>${p.name}</b>
+${p.warnings.map(w=>`<div class="tag">⚠ ${w}</div>`).join("")}
 </div>
-`;
-});
-warnPage.innerHTML=warnHtml;
+`).join("");
+
+/* الإنذارات */
+infractionsPage.innerHTML = data.map(p=>`
+<div class="list-item">
+<b>${p.name}</b>
+${p.infractions.map(w=>`<div class="tag">🚨 ${w}</div>`).join("")}
+</div>
+`).join("");
 
 /* الملاحظات */
-let noteHtml="";
-arr.forEach(a=>{
-noteHtml+=`
+notesPage.innerHTML = data.map(p=>`
+<div class="list-item">
+<b>${p.name}</b>
+${p.notes.map(n=>`<div class="tag">📝 ${n}</div>`).join("")}
+</div>
+`).join("");
+
+/* الإعدادات */
+settingsPage.innerHTML = `
 <div class="card">
-<h3>${a.name}</h3>
-${a.notes.map(n=>`<div class="tag">📝 ${n}</div>`).join("")}
+<button class="primary" onclick="exportData()">📥 تصدير البيانات</button>
+<input type="file" onchange="importData(event)">
+<button class="danger" onclick="resetAll()">🧹 حذف كل البيانات</button>
 </div>
 `;
-});
-notePage.innerHTML=noteHtml;
 
 }
 
 /* وظائف */
-function accept(i){
-let arr=JSON.parse(localStorage.getItem("apps"));
-arr[i].status="accepted";
-localStorage.setItem("apps",JSON.stringify(arr));
-render();
-}
-
-function reject(i){
-let arr=JSON.parse(localStorage.getItem("apps"));
-arr[i].status="rejected";
-localStorage.setItem("apps",JSON.stringify(arr));
-render();
-}
-
-function warn(i){
-let arr=JSON.parse(localStorage.getItem("apps"));
-arr[i].warnings++;
-localStorage.setItem("apps",JSON.stringify(arr));
-render();
-}
-
-function note(i){
-let t=prompt("اكتب ملاحظة");
+function addWarning(i){
+let t = prompt("سبب التحذير");
 if(!t) return;
-
-let arr=JSON.parse(localStorage.getItem("apps"));
-arr[i].notes.push(t);
-
-localStorage.setItem("apps",JSON.stringify(arr));
+let d = getData();
+d[i].warnings.push(t);
+saveData(d);
 render();
+}
+
+function addInfraction(i){
+let t = prompt("سبب الإنذار");
+if(!t) return;
+let d = getData();
+d[i].infractions.push(t);
+saveData(d);
+render();
+}
+
+function addNote(i){
+let t = prompt("الملاحظة");
+if(!t) return;
+let d = getData();
+d[i].notes.push(t);
+saveData(d);
+render();
+}
+
+function removePlayer(i){
+let d = getData();
+d.splice(i,1);
+saveData(d);
+render();
+}
+
+/* تصدير */
+function exportData(){
+let data = localStorage.getItem("players");
+let blob = new Blob([data],{type:"application/json"});
+let a = document.createElement("a");
+a.href = URL.createObjectURL(blob);
+a.download = "velora_data.json";
+a.click();
+}
+
+/* استيراد */
+function importData(e){
+let file = e.target.files[0];
+let reader = new FileReader();
+reader.onload = ()=>{
+localStorage.setItem("players",reader.result);
+render();
+};
+reader.readAsText(file);
+}
+
+/* حذف */
+function resetAll(){
+if(confirm("متأكد؟")){
+localStorage.removeItem("players");
+render();
+}
 }
 
 </script>
