@@ -2,14 +2,38 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>وزارة الداخلية</title>
 
 <style>
 body{margin:0;font-family:Tahoma;background:#070b14;color:#fff}
-header{background:#0f172a;padding:16px;text-align:center;font-size:22px;font-weight:bold}
 
-.nav{display:flex;gap:6px;justify-content:center;background:#0b1220;padding:10px;flex-wrap:wrap}
-.nav button{padding:8px;border:none;border-radius:8px;background:#1f2937;color:#fff;cursor:pointer}
+header{
+background:#0f172a;
+padding:16px;
+text-align:center;
+font-size:22px;
+font-weight:bold;
+}
+
+.nav{
+display:flex;
+gap:6px;
+justify-content:center;
+background:#0b1220;
+padding:10px;
+flex-wrap:wrap;
+}
+
+.nav button{
+padding:8px;
+border:none;
+border-radius:8px;
+background:#1f2937;
+color:#fff;
+cursor:pointer;
+}
+
 .nav button.active{background:#2563eb}
 
 .container{max-width:1100px;margin:auto;padding:12px}
@@ -17,8 +41,14 @@ header{background:#0f172a;padding:16px;text-align:center;font-size:22px;font-wei
 .card{background:#111827;padding:10px;margin:10px 0;border-radius:10px}
 
 input,select{
-width:100%;padding:10px;margin:5px 0;
-background:#0a0e14;color:#fff;border:none;border-radius:8px}
+width:100%;
+padding:10px;
+margin:5px 0;
+background:#0a0e14;
+color:#fff;
+border:none;
+border-radius:8px;
+}
 
 button{padding:8px;border:none;border-radius:8px;cursor:pointer}
 .primary{background:#2563eb;color:#fff}
@@ -38,16 +68,19 @@ button{padding:8px;border:none;border-radius:8px;cursor:pointer}
 
 <div class="nav">
 <button class="active" onclick="show('army',this)">👮 العسكريين</button>
-<button onclick="show('logs',this)">📜 السجل</button>
+<button onclick="show('points',this)">⭐ البوينتات</button>
+<button onclick="show('warns',this)">⚠ التحذيرات</button>
+<button onclick="show('notes',this)">📝 الملاحظات</button>
 </div>
 
 <div class="container">
 
+<!-- إضافة -->
 <div class="card">
 <h3>➕ إضافة عسكري</h3>
 
-<input id="name" placeholder="اسم">
-<input id="gid" placeholder="Game ID">
+<input id="name" placeholder="اسم العسكري">
+<input id="gid" placeholder="Game ID (إجباري)">
 <input id="disc" placeholder="Discord (اختياري)">
 
 <select id="rank"></select>
@@ -62,8 +95,19 @@ button{padding:8px;border:none;border-radius:8px;cursor:pointer}
 <button class="primary" onclick="add()">إضافة</button>
 </div>
 
+<!-- بحث -->
+<div class="card">
+<h3>🔎 بحث</h3>
+<input id="search" placeholder="اسم العسكري">
+<button onclick="find()">بحث</button>
+<div id="result"></div>
+</div>
+
+<!-- الأقسام -->
 <div id="army" class="section active"></div>
-<div id="logs" class="section"></div>
+<div id="points" class="section"></div>
+<div id="warns" class="section"></div>
+<div id="notes" class="section"></div>
 
 </div>
 
@@ -82,7 +126,7 @@ function save(d){localStorage.setItem("data",JSON.stringify(d))}
 window.onload=()=>{
 rank.innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
 render();
-}
+};
 
 /* تبويب */
 function show(id,btn){
@@ -90,31 +134,43 @@ document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
 document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 btn.classList.add("active");
-render();
 }
 
-/* إضافة */
+/* ترقية وتنزيل */
+function promote(p){
+let i=ranks.indexOf(p.rank);
+if(i>0) p.rank=ranks[i-1];
+p.points=0;
+}
+
+function demote(p){
+let i=ranks.indexOf(p.rank);
+if(i<ranks.length-1) p.rank=ranks[i+1];
+p.warn=0;
+}
+
+/* إضافة (مضمونة) */
 function add(){
 
 let d=get();
 
-let nameVal=name.value.trim();
-let gidVal=gid.value.trim();
-let discVal=disc.value.trim();
+let n=name.value.trim();
+let g=gid.value.trim();
 
-if(!nameVal || !gidVal){
+if(!n || !g){
 alert("لازم الاسم + Game ID");
 return;
 }
 
 d.push({
-name:nameVal,
-gid:gidVal,
-disc:discVal||"لا يوجد",
+name:n,
+gid:g,
+disc:disc.value||"لا يوجد",
 rank:rank.value,
 unit:unit.value,
 points:0,
-warn:0
+warn:0,
+notes:[]
 });
 
 save(d);
@@ -126,18 +182,43 @@ disc.value="";
 render();
 }
 
-/* عرض العسكريين */
+/* بوينت */
+function addPoint(i){
+let d=get();
+d[i].points++;
+
+if(d[i].points>=3){
+promote(d[i]);
+}
+
+save(d);
+render();
+}
+
+/* تحذير */
+function addWarn(i){
+let d=get();
+d[i].warn++;
+
+if(d[i].warn>=3){
+demote(d[i]);
+}
+
+save(d);
+render();
+}
+
+/* عرض */
 function render(){
 
 let d=get();
 
-/* ترتيب حسب الرتبة من الأعلى للأقل */
+/* ترتيب حسب الرتبة */
 d.sort((a,b)=>ranks.indexOf(a.rank)-ranks.indexOf(b.rank));
 
-army.innerHTML=d.map((p,i)=>`
+army.innerHTML=d.map(p=>`
 <div class="card">
-
-<b>${p.name}</b>
+<b>${p.name}</b><br>
 
 <div class="tag">🎖 ${p.rank}</div>
 <div class="tag">🚓 ${p.unit}</div>
@@ -147,24 +228,49 @@ army.innerHTML=d.map((p,i)=>`
 <div class="tag">⭐ ${p.points}</div>
 <div class="tag">⚠ ${p.warn}</div>
 
+<div>
+<button class="primary" onclick="addPoint(${d.indexOf(p)})">⭐</button>
+<button class="warn" onclick="addWarn(${d.indexOf(p)})">⚠</button>
+</div>
+
 </div>
 `).join("");
 
-/* السجل الكامل */
-logs.innerHTML=d.map(p=>`
+points.innerHTML=d.map(p=>`
+<div class="card">${p.name} — ⭐ ${p.points}</div>
+`).join("");
+
+warns.innerHTML=d.map(p=>`
+<div class="card">${p.name} — ⚠ ${p.warn}</div>
+`).join("");
+
+notes.innerHTML=d.map(p=>`
+<div class="card">${p.name} — 📝 ${p.notes.length}</div>
+`).join("");
+
+}
+
+/* بحث */
+function find(){
+
+let d=get();
+let q=search.value.trim();
+
+let p=d.find(x=>x.name.includes(q));
+
+if(!p){
+result.innerHTML="❌ غير موجود";
+return;
+}
+
+result.innerHTML=`
 <div class="card">
-
 <b>${p.name}</b><br>
-
-🎖 الرتبة: ${p.rank}<br>
-🚓 اليونت: ${p.unit}<br>
-🆔 ID: ${p.gid}<br>
-💬 Discord: ${p.disc}<br>
-⭐ بوينت: ${p.points}<br>
-⚠ تحذير: ${p.warn}
-
+🎖 ${p.rank}<br>
+🚓 ${p.unit}<br>
+🆔 ${p.gid}
 </div>
-`).join("");
+`;
 }
 
 </script>
