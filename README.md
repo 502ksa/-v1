@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -119,6 +120,8 @@ margin:2px;
 
 <div id="points" class="section"></div>
 <div id="warns" class="section"></div>
+
+<!-- الملاحظات -->
 <div id="notes" class="section">
 
 <div class="card">
@@ -188,7 +191,6 @@ fillSelect(arr);
 
 /* ➕ إضافة */
 function add(){
-
 db.ref("players").push({
 name:name.value||"بدون اسم",
 gid:gid.value||"بدون ID",
@@ -207,15 +209,12 @@ gid.value="";
 function addPoint(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
-
 p.points++;
-
 if(p.points>=3){
 p.points=0;
 let i=ranks.indexOf(p.rank);
 if(i>0)p.rank=ranks[i-1];
 }
-
 db.ref("players/"+id).set(p);
 });
 }
@@ -224,20 +223,17 @@ db.ref("players/"+id).set(p);
 function addWarn(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
-
 p.warn++;
-
 if(p.warn>=3){
 p.warn=0;
 let i=ranks.indexOf(p.rank);
 if(i<ranks.length-1)p.rank=ranks[i+1];
 }
-
 db.ref("players/"+id).set(p);
 });
 }
 
-/* 📝 */
+/* 📝 إضافة ملاحظة */
 function addNote(){
 let id=noteSelect.value;
 let text=noteText.value.trim();
@@ -246,7 +242,12 @@ if(!id||!text)return;
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
 if(!p.notes)p.notes=[];
-p.notes.push({text,time:new Date().toLocaleString("ar")});
+
+p.notes.push({
+text:text,
+time:new Date().toLocaleString("ar")
+});
+
 db.ref("players/"+id).set(p);
 noteText.value="";
 });
@@ -256,7 +257,7 @@ function fillSelect(d){
 noteSelect.innerHTML=d.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
 }
 
-/* 👮 العسكريين (رجّعنا التعديل والحذف) */
+/* 👮 العسكريين */
 function renderArmy(d){
 armyList.innerHTML=d.map(p=>`
 <div class="card">
@@ -279,33 +280,69 @@ armyList.innerHTML=d.map(p=>`
 `).join("");
 }
 
-/* نقاط */
 function renderPoints(d){
 points.innerHTML=d.map(p=>`
 <div class="card">${p.name} ⭐ ${p.points}</div>
 `).join("");
 }
 
-/* تحذيرات */
 function renderWarns(d){
 warns.innerHTML=d.map(p=>`
 <div class="card">${p.name} ⚠ ${p.warn}</div>
 `).join("");
 }
 
-/* ملاحظات */
+/* 📝 FIX: عرض الملاحظة + تعديل + حذف */
 function renderNotes(d){
 notesList.innerHTML=d
-.filter(p=>p.notes&&p.notes.length>0)
+.filter(p=>p.notes && p.notes.length>0)
 .map(p=>`
 <div class="card">
+
 <b>${p.name}</b><br>
-${p.notes.map(n=>`📝 ${n.text} - ${n.time}<br>`).join("")}
+
+${p.notes.map((n,i)=>`
+<div style="background:#0b1220;padding:6px;margin:5px 0;border-radius:6px">
+
+📝 ${n.text}<br>
+⏱ ${n.time}<br>
+
+<button class="primary" onclick="editNote('${p.id}',${i})">✏ تعديل</button>
+<button class="danger" onclick="deleteNote('${p.id}',${i})">🗑 حذف</button>
+
+</div>
+`).join("")}
+
 </div>
 `).join("");
 }
 
-/* تعديل */
+/* تعديل ملاحظة */
+function editNote(pid,i){
+db.ref("players/"+pid).once("value",snap=>{
+let p=snap.val();
+
+let newText=prompt("تعديل الملاحظة",p.notes[i].text);
+
+if(newText){
+p.notes[i].text=newText;
+db.ref("players/"+pid).set(p);
+}
+});
+}
+
+/* حذف ملاحظة */
+function deleteNote(pid,i){
+db.ref("players/"+pid).once("value",snap=>{
+let p=snap.val();
+
+p.notes.splice(i,1);
+
+db.ref("players/"+pid).set(p);
+});
+}
+
+/* تعديل عسكري */
 function editPlayer(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
@@ -320,7 +357,7 @@ db.ref("players/"+id).set(p);
 });
 }
 
-/* حذف */
+/* حذف عسكري */
 function deletePlayer(id){
 if(confirm("حذف العسكري؟")){
 db.ref("players/"+id).remove();
