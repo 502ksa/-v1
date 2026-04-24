@@ -29,7 +29,6 @@ font-size:22px;
 font-weight:bold;
 }
 
-/* 🔥 القوائم فوق */
 .nav{
 display:flex;
 gap:6px;
@@ -93,9 +92,9 @@ font-size:12px;
 
 <header>🏛️ وزارة الداخلية - Velora RP</header>
 
-<!-- إضافة -->
 <div class="container">
 
+<!-- إضافة -->
 <div class="card">
 <h3>➕ إضافة عسكري</h3>
 
@@ -122,14 +121,21 @@ font-size:12px;
 <button class="primary" onclick="addNote()">إضافة</button>
 </div>
 
+<!-- السجل -->
+<div class="card">
+<h3>📜 السجل</h3>
+<button class="danger" onclick="clearLogs()">🧹 حذف السجل كامل</button>
 </div>
 
-<!-- القوائم فوق -->
+</div>
+
+<!-- القوائم -->
 <div class="nav">
 <button class="active" onclick="show('army',this)">👮 العسكريين</button>
 <button onclick="show('points',this)">⭐ النقاط</button>
 <button onclick="show('warns',this)">⚠ التحذيرات</button>
 <button onclick="show('notes',this)">📝 الملاحظات</button>
+<button onclick="show('logs',this)">📜 السجل</button>
 </div>
 
 <div class="container">
@@ -138,6 +144,7 @@ font-size:12px;
 <div id="points" class="section"></div>
 <div id="warns" class="section"></div>
 <div id="notes" class="section"></div>
+<div id="logs" class="section"></div>
 
 </div>
 
@@ -166,6 +173,14 @@ const ranks=[
 "رقيب أول","رقيب","وكيل رقيب","عريف","جندي أول","جندي"
 ];
 
+/* 🔥 سجل العمليات */
+function addLog(text){
+db.ref("logs").push({
+text,
+time:new Date().toLocaleString("ar")
+});
+}
+
 window.onload=()=>{
 rank.innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
 load();
@@ -186,18 +201,16 @@ let data=snap.val()||{};
 let arr=Object.entries(data).map(([id,v])=>({id,...v}));
 render(arr);
 fillSelect(arr);
+renderLogs();
 });
 }
 
-/* ➕ إضافة (إصلاح الاسم) */
+/* إضافة */
 function add(){
 
-let n=name.value.trim();
-let g=gid.value.trim();
-
 db.ref("players").push({
-name: n || "بدون اسم",
-gid: g || "بدون ID",
+name:name.value?.trim() || "بدون اسم",
+gid:gid.value?.trim() || "بدون ID",
 rank:rank.value,
 unit:unit.value,
 points:0,
@@ -205,70 +218,95 @@ warn:0,
 notes:[]
 });
 
+addLog("➕ إضافة عسكري: " + name.value);
+
 name.value="";
 gid.value="";
 }
 
-/* ⭐ */
+/* ⭐ ترقية */
 function addPoint(id){
 db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-p.points++;
+let p=snap.val()||{};
+
+p.points=(p.points||0)+1;
 
 if(p.points>=3){
 p.points=0;
+
 let i=ranks.indexOf(p.rank);
-if(i>0)p.rank=ranks[i-1];
+if(i>0){
+p.rank=ranks[i-1];
+addLog("⬆ ترقية: "+p.name);
+}
 }
 
 db.ref("players/"+id).set(p);
 });
 }
 
-/* ⚠ */
+/* ⚠ تنزيل */
 function addWarn(id){
 db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-p.warn++;
+let p=snap.val()||{};
+
+p.warn=(p.warn||0)+1;
 
 if(p.warn>=3){
 p.warn=0;
+
 let i=ranks.indexOf(p.rank);
-if(i<ranks.length-1)p.rank=ranks[i+1];
+if(i<ranks.length-1){
+p.rank=ranks[i+1];
+addLog("⬇ تنزيل: "+p.name);
+}
 }
 
 db.ref("players/"+id).set(p);
 });
 }
 
-/* 🗑 حذف ملاحظة */
-function deleteNote(pid,index){
-db.ref("players/"+pid).once("value",snap=>{
-let p=snap.val();
-p.notes.splice(index,1);
-db.ref("players/"+pid).set(p);
-});
-}
-
-/* 📝 إضافة ملاحظة */
+/* 📝 ملاحظات */
 function addNote(){
 
 let id=noteSelect.value;
-let text=noteText.value;
+let text=noteText.value.trim();
 
 if(!id||!text)return;
 
 db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
+let p=snap.val()||{};
+
 if(!p.notes)p.notes=[];
 
 p.notes.push({
-text:text,
+text,
 time:new Date().toLocaleString("ar")
 });
 
 db.ref("players/"+id).set(p);
 noteText.value="";
+});
+}
+
+/* 🧹 حذف السجل */
+function clearLogs(){
+if(confirm("حذف السجل كامل؟")){
+db.ref("logs").remove();
+}
+}
+
+/* عرض السجل */
+function renderLogs(){
+db.ref("logs").on("value",snap=>{
+let data=snap.val()||{};
+
+logs.innerHTML=Object.values(data).reverse().map(l=>`
+<div class="card">
+🕒 ${l.time}<br>
+${l.text}
+</div>
+`).join("");
 });
 }
 
@@ -285,16 +323,10 @@ function render(d){
 army.innerHTML=d.map(p=>`
 <div class="card">
 <b>${p.name}</b><br>
-
 <div class="tag">🎖 ${p.rank}</div>
 <div class="tag">🚓 ${p.unit}</div>
-
 <div class="tag">⭐ ${p.points}</div>
 <div class="tag">⚠ ${p.warn}</div>
-
-<button class="primary" onclick="addPoint('${p.id}')">⭐</button>
-<button class="warn" onclick="addWarn('${p.id}')">⚠</button>
-
 </div>
 `).join("");
 
@@ -309,12 +341,7 @@ warns.innerHTML=d.map(p=>`
 notes.innerHTML=d.map(p=>`
 <div class="card">
 <b>${p.name}</b><br>
-
-${(p.notes||[]).map((n,i)=>
-`📝 ${n.text} - ${n.time}
-<button class="danger" onclick="deleteNote('${p.id}',${i})">حذف</button><br>`
-).join("")}
-
+${(p.notes||[]).map(n=>`📝 ${n.text} - ${n.time}`).join("<br>")}
 </div>
 `).join("");
 
