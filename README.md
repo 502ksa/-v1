@@ -6,17 +6,16 @@
 <title>وزارة الداخلية - Velora RP</title>
 
 <style>
-/* 🌌 خلفية متحركة (مصححة 100%) */
 body{
 margin:0;
 font-family:Tahoma;
 color:#fff;
 background: linear-gradient(-45deg,#050814,#0b1220,#0a0e1a,#050816);
 background-size:400% 400%;
-animation:bgMove 10s ease infinite;
+animation:bg 10s ease infinite;
 }
 
-@keyframes bgMove{
+@keyframes bg{
 0%{background-position:0% 50%}
 50%{background-position:100% 50%}
 100%{background-position:0% 50%}
@@ -30,6 +29,7 @@ font-size:22px;
 font-weight:bold;
 }
 
+/* 🔥 القوائم فوق */
 .nav{
 display:flex;
 gap:6px;
@@ -70,7 +70,7 @@ border:none;
 border-radius:8px;
 }
 
-button{padding:8px;border:none;border-radius:8px;cursor:pointer}
+button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 .primary{background:#2563eb;color:#fff}
 .warn{background:#f59e0b}
 .danger{background:#ef4444}
@@ -93,9 +93,9 @@ font-size:12px;
 
 <header>🏛️ وزارة الداخلية - Velora RP</header>
 
+<!-- إضافة -->
 <div class="container">
 
-<!-- إضافة -->
 <div class="card">
 <h3>➕ إضافة عسكري</h3>
 
@@ -114,28 +114,25 @@ font-size:12px;
 <button class="primary" onclick="add()">إضافة</button>
 </div>
 
-<!-- اختيار شخص للملاحظات -->
+<!-- ملاحظات -->
 <div class="card">
-<h3>📝 إضافة ملاحظة لشخص</h3>
+<h3>📝 إضافة ملاحظة</h3>
 <select id="noteSelect"></select>
-<input id="noteText" placeholder="اكتب الملاحظة">
-<button class="primary" onclick="addNote()">إضافة ملاحظة</button>
+<input id="noteText" placeholder="الملاحظة">
+<button class="primary" onclick="addNote()">إضافة</button>
 </div>
 
-<!-- بحث -->
-<div class="card">
-<h3>🔎 بحث</h3>
-<input id="search" placeholder="اسم">
-<button onclick="find()">بحث</button>
-<div id="result"></div>
 </div>
 
+<!-- القوائم فوق -->
 <div class="nav">
 <button class="active" onclick="show('army',this)">👮 العسكريين</button>
 <button onclick="show('points',this)">⭐ النقاط</button>
 <button onclick="show('warns',this)">⚠ التحذيرات</button>
 <button onclick="show('notes',this)">📝 الملاحظات</button>
 </div>
+
+<div class="container">
 
 <div id="army" class="section active"></div>
 <div id="points" class="section"></div>
@@ -163,7 +160,6 @@ appId:"1:681356163114:web:c40b8d7fed229ce8e7eb53"
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
-/* رتب */
 const ranks=[
 "فريق أول","فريق","لواء","عميد","عقيد","مقدم",
 "رائد","نقيب","ملازم أول","ملازم",
@@ -175,7 +171,7 @@ rank.innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
 load();
 };
 
-/* عرض */
+/* تبويب */
 function show(id,btn){
 document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
 document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
@@ -188,18 +184,20 @@ function load(){
 db.ref("players").on("value",snap=>{
 let data=snap.val()||{};
 let arr=Object.entries(data).map(([id,v])=>({id,...v}));
-
 render(arr);
 fillSelect(arr);
 });
 }
 
-/* إضافة */
+/* ➕ إضافة (إصلاح الاسم) */
 function add(){
 
+let n=name.value.trim();
+let g=gid.value.trim();
+
 db.ref("players").push({
-name:name.value||"بدون اسم",
-gid:gid.value||"بدون ID",
+name: n || "بدون اسم",
+gid: g || "بدون ID",
 rank:rank.value,
 unit:unit.value,
 points:0,
@@ -211,7 +209,7 @@ name.value="";
 gid.value="";
 }
 
-/* ⭐ نقطة + ترقية */
+/* ⭐ */
 function addPoint(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
@@ -227,7 +225,7 @@ db.ref("players/"+id).set(p);
 });
 }
 
-/* ⚠ تحذير + تنزيل */
+/* ⚠ */
 function addWarn(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
@@ -243,21 +241,12 @@ db.ref("players/"+id).set(p);
 });
 }
 
-/* 🗑 حذف نقطة */
-function removePoint(id){
-db.ref("players/"+id).once("value",snap=>{
+/* 🗑 حذف ملاحظة */
+function deleteNote(pid,index){
+db.ref("players/"+pid).once("value",snap=>{
 let p=snap.val();
-p.points=Math.max(0,p.points-1);
-db.ref("players/"+id).set(p);
-});
-}
-
-/* 🗑 حذف تحذير */
-function removeWarn(id){
-db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-p.warn=Math.max(0,p.warn-1);
-db.ref("players/"+id).set(p);
+p.notes.splice(index,1);
+db.ref("players/"+pid).set(p);
 });
 }
 
@@ -283,7 +272,7 @@ noteText.value="";
 });
 }
 
-/* تعبئة قائمة الملاحظات */
+/* تعبئة */
 function fillSelect(arr){
 noteSelect.innerHTML=arr.map(p=>
 `<option value="${p.id}">${p.name}</option>`
@@ -305,8 +294,6 @@ army.innerHTML=d.map(p=>`
 
 <button class="primary" onclick="addPoint('${p.id}')">⭐</button>
 <button class="warn" onclick="addWarn('${p.id}')">⚠</button>
-<button class="danger" onclick="removePoint('${p.id}')">-⭐</button>
-<button class="danger" onclick="removeWarn('${p.id}')">-⚠</button>
 
 </div>
 `).join("");
@@ -322,29 +309,15 @@ warns.innerHTML=d.map(p=>`
 notes.innerHTML=d.map(p=>`
 <div class="card">
 <b>${p.name}</b><br>
-${(p.notes||[]).map(n=>`📝 ${n.text} - ${n.time}`).join("<br>")}
+
+${(p.notes||[]).map((n,i)=>
+`📝 ${n.text} - ${n.time}
+<button class="danger" onclick="deleteNote('${p.id}',${i})">حذف</button><br>`
+).join("")}
+
 </div>
 `).join("");
 
-}
-
-/* بحث */
-function find(){
-db.ref("players").once("value",snap=>{
-let d=Object.values(snap.val()||{});
-let q=search.value;
-
-let p=d.find(x=>x.name.includes(q));
-
-result.innerHTML=p?`
-<div class="card">
-<b>${p.name}</b><br>
-🎖 ${p.rank}<br>
-⭐ ${p.points}<br>
-⚠ ${p.warn}
-</div>
-`:"غير موجود";
-});
 }
 
 </script>
