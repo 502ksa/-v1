@@ -170,11 +170,16 @@ document.getElementById(id).classList.add("active");
 btn.classList.add("active");
 }
 
-/* تحميل */
+/* تحميل + ترتيب من الأعلى للأقل */
 function load(){
 db.ref("players").on("value",snap=>{
 let data=snap.val()||{};
-let arr=Object.entries(data).map(([id,v])=>({id,...v}));
+
+let arr = Object.entries(data).map(([id,v])=>({id,...v}));
+
+arr.sort((a,b)=>{
+return ranks.indexOf(a.rank) - ranks.indexOf(b.rank);
+});
 
 renderArmy(arr);
 renderPoints(arr);
@@ -184,21 +189,27 @@ fillSelect(arr);
 });
 }
 
-/* ➕ إضافة */
+/* ➕ إضافة عسكري (إصلاح الاسم) */
 function add(){
 
+let n = document.getElementById("name").value;
+let g = document.getElementById("gid").value;
+
+n = (n && n.trim()) ? n.trim() : "بدون اسم";
+g = (g && g.trim()) ? g.trim() : "بدون ID";
+
 db.ref("players").push({
-name:name.value||"بدون اسم",
-gid:gid.value||"بدون ID",
-rank:rank.value,
-unit:unit.value,
+name:n,
+gid:g,
+rank:document.getElementById("rank").value,
+unit:document.getElementById("unit").value,
 points:0,
 warn:0,
 notes:[]
 });
 
-name.value="";
-gid.value="";
+document.getElementById("name").value="";
+document.getElementById("gid").value="";
 }
 
 /* ⭐ نقطة */
@@ -244,8 +255,14 @@ if(!id || !text) return;
 
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
+
 if(!p.notes) p.notes=[];
-p.notes.push({text,time:new Date().toLocaleString("ar")});
+
+p.notes.push({
+text,
+time:new Date().toLocaleString("ar")
+});
+
 db.ref("players/"+id).set(p);
 noteText.value="";
 });
@@ -256,7 +273,7 @@ function fillSelect(d){
 noteSelect.innerHTML=d.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
 }
 
-/* 👮 العسكريين (التعديل هنا فقط) */
+/* العسكريين */
 function renderArmy(d){
 armyList.innerHTML=d.map(p=>`
 <div class="card">
@@ -265,8 +282,8 @@ armyList.innerHTML=d.map(p=>`
 
 <button class="primary" onclick="addPoint('${p.id}')">⭐</button>
 <button class="warn" onclick="addWarn('${p.id}')">⚠</button>
-<button class="primary" onclick="editPlayer('${p.id}')">✏ تعديل</button>
-<button class="danger" onclick="deletePlayer('${p.id}')">🗑 حذف</button>
+<button class="primary" onclick="editPlayer('${p.id}')">✏</button>
+<button class="danger" onclick="deletePlayer('${p.id}')">🗑</button>
 </div>
 `).join("");
 }
@@ -293,9 +310,7 @@ notesList.innerHTML=d
 <div class="card">
 <b>${p.name}</b><br>
 
-${p.notes.map((n,i)=>`
-📝 ${n.text} - ${n.time}<br>
-`).join("")}
+${p.notes.map(n=>`📝 ${n.text} - ${n.time}<br>`).join("")}
 
 </div>
 `).join("");
