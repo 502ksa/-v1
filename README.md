@@ -70,14 +70,13 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 .section{display:none}
 .section.active{display:block}
 
-/* 🔥 تعديل بسيط للعرض */
-.idBox{
+.smallTag{
 display:inline-block;
 background:#1f2937;
 padding:3px 6px;
 border-radius:6px;
-margin-left:6px;
 font-size:12px;
+margin:2px;
 }
 </style>
 </head>
@@ -95,6 +94,7 @@ font-size:12px;
 
 <div class="container">
 
+<!-- العسكريين -->
 <div id="army" class="section active">
 
 <div class="card">
@@ -118,8 +118,13 @@ font-size:12px;
 <div id="armyList"></div>
 </div>
 
+<!-- النقاط -->
 <div id="points" class="section"></div>
+
+<!-- التحذيرات -->
 <div id="warns" class="section"></div>
+
+<!-- الملاحظات -->
 <div id="notes" class="section">
 
 <div class="card">
@@ -154,6 +159,7 @@ appId:"1:681356163114:web:c40b8d7fed229ce8e7eb53"
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
+/* 🔥 ترتيب من الأعلى للأقل */
 const ranks=[
 "فريق أول","فريق","لواء","عميد","عقيد","مقدم",
 "رائد","نقيب","ملازم أول","ملازم",
@@ -172,11 +178,13 @@ document.getElementById(id).classList.add("active");
 btn.classList.add("active");
 }
 
+/* تحميل + ترتيب */
 function load(){
 db.ref("players").on("value",snap=>{
 let data=snap.val()||{};
 let arr=Object.entries(data).map(([id,v])=>({id,...v}));
 
+/* ترتيب حسب الرتبة (الأعلى أول) */
 arr.sort((a,b)=>ranks.indexOf(a.rank)-ranks.indexOf(b.rank));
 
 renderArmy(arr);
@@ -204,7 +212,7 @@ name.value="";
 gid.value="";
 }
 
-/* ⭐ */
+/* ⭐ نقطة */
 function addPoint(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
@@ -221,7 +229,7 @@ db.ref("players/"+id).set(p);
 });
 }
 
-/* ⚠ */
+/* ⚠ تحذير */
 function addWarn(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
@@ -238,7 +246,7 @@ db.ref("players/"+id).set(p);
 });
 }
 
-/* 📝 */
+/* 📝 ملاحظة */
 function addNote(){
 let id=noteSelect.value;
 let text=noteText.value.trim();
@@ -257,17 +265,20 @@ function fillSelect(d){
 noteSelect.innerHTML=d.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
 }
 
-/* 👮 عرض العسكريين (تعديل هنا فقط) */
+/* 👮 العسكريين (التعديل المطلوب فقط) */
 function renderArmy(d){
 armyList.innerHTML=d.map(p=>`
 <div class="card">
 
-<div>
-<span class="idBox">${p.gid}</span>
-<b>${p.name}</b>
-</div>
+<!-- الاسم لحاله فوق -->
+<b style="font-size:16px">${p.name}</b><br>
 
-🎖 ${p.rank} | 🚓 ${p.unit}<br><br>
+<!-- تحت الاسم: ID + رتبة + قطاع -->
+<span class="smallTag">🆔 ${p.gid}</span>
+<span class="smallTag">🎖 ${p.rank}</span>
+<span class="smallTag">🚓 ${p.unit}</span>
+
+<br><br>
 
 <button class="primary" onclick="addPoint('${p.id}')">⭐</button>
 <button class="warn" onclick="addWarn('${p.id}')">⚠</button>
