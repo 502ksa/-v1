@@ -59,6 +59,25 @@ button{padding:8px;border:none;border-radius:8px;cursor:pointer}
 
 .section{display:none}
 .section.active{display:block}
+
+/* Modal */
+.modal{
+display:none;
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,0.7);
+justify-content:center;
+align-items:center;
+}
+
+.modal-content{
+background:#111827;
+padding:15px;
+width:90%;
+max-width:400px;
+border-radius:10px;
+}
 </style>
 </head>
 
@@ -79,9 +98,9 @@ button{padding:8px;border:none;border-radius:8px;cursor:pointer}
 <div class="card">
 <h3>➕ إضافة عسكري</h3>
 
-<input id="name" placeholder="اسم العسكري">
-<input id="gid" placeholder="Game ID (إجباري)">
-<input id="disc" placeholder="Discord (اختياري)">
+<input id="name" placeholder="اسم">
+<input id="gid" placeholder="Game ID">
+<input id="disc" placeholder="Discord">
 
 <select id="rank"></select>
 
@@ -98,7 +117,7 @@ button{padding:8px;border:none;border-radius:8px;cursor:pointer}
 <!-- بحث -->
 <div class="card">
 <h3>🔎 بحث</h3>
-<input id="search" placeholder="اسم العسكري">
+<input id="search" placeholder="اسم">
 <button onclick="find()">بحث</button>
 <div id="result"></div>
 </div>
@@ -111,22 +130,49 @@ button{padding:8px;border:none;border-radius:8px;cursor:pointer}
 
 </div>
 
+<!-- Modal -->
+<div class="modal" id="modal">
+<div class="modal-content">
+
+<h3>✏ تعديل عسكري</h3>
+
+<input id="edit_name">
+<input id="edit_gid">
+<input id="edit_disc">
+
+<select id="edit_rank"></select>
+
+<select id="edit_unit">
+<option>قوات طوارئ</option>
+<option>أمن عام</option>
+<option>المرور</option>
+<option>التحقيقات</option>
+</select>
+
+<button class="primary" onclick="saveEdit()">حفظ</button>
+<button class="danger" onclick="closeModal()">إغلاق</button>
+
+</div>
+</div>
+
 <script>
 
-/* الرتب */
 const ranks=[
 "فريق أول","فريق","لواء","عميد","عقيد","مقدم",
 "رائد","نقيب","ملازم أول","ملازم",
 "رئيس رقباء","رقيب أول","رقيب","وكيل رقيب","عريف","جندي أول","جندي"
 ];
 
-/* التخزين */
+let editIndex=null;
+
+/* تخزين */
 function get(){return JSON.parse(localStorage.getItem("data")||"[]")}
 function save(d){localStorage.setItem("data",JSON.stringify(d))}
 
 /* init */
 window.onload=()=>{
 rank.innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
+edit_rank.innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
 render();
 };
 
@@ -141,41 +187,33 @@ btn.classList.add("active");
 /* ترقية */
 function promote(p){
 let i=ranks.indexOf(p.rank);
-if(i>0) p.rank=ranks[i-1];
+if(i>0)p.rank=ranks[i-1];
 p.points=0;
 }
 
 /* تنزيل */
 function demote(p){
 let i=ranks.indexOf(p.rank);
-if(i<ranks.length-1) p.rank=ranks[i+1];
+if(i<ranks.length-1)p.rank=ranks[i+1];
 p.warn=0;
 }
 
-/* إضافة (مضمون 100%) */
+/* إضافة */
 function add(){
 
 let d=get();
 
-let nameEl=document.getElementById("name");
-let gidEl=document.getElementById("gid");
-let discEl=document.getElementById("disc");
-
-let nameVal=nameEl.value.trim();
-let gidVal=gidEl.value.trim();
-let discVal=discEl.value.trim();
-
-if(!nameVal || !gidVal){
+if(!name.value || !gid.value){
 alert("لازم الاسم + Game ID");
 return;
 }
 
 d.push({
-name:nameVal,
-gid:gidVal,
-disc:discVal||"لا يوجد",
-rank:document.getElementById("rank").value,
-unit:document.getElementById("unit").value,
+name:name.value.trim(),
+gid:gid.value.trim(),
+disc:disc.value||"لا يوجد",
+rank:rank.value,
+unit:unit.value,
 points:0,
 warn:0,
 notes:[]
@@ -183,37 +221,65 @@ notes:[]
 
 save(d);
 
-nameEl.value="";
-gidEl.value="";
-discEl.value="";
+name.value="";
+gid.value="";
+disc.value="";
 
 render();
 }
 
-/* ⭐ بوينت */
+/* ⭐ */
 function addPoint(i){
 let d=get();
 d[i].points++;
-
-if(d[i].points>=3){
-promote(d[i]);
-}
-
+if(d[i].points>=3)promote(d[i]);
 save(d);
 render();
 }
 
-/* ⚠ تحذير */
+/* ⚠ */
 function addWarn(i){
 let d=get();
 d[i].warn++;
-
-if(d[i].warn>=3){
-demote(d[i]);
-}
-
+if(d[i].warn>=3)demote(d[i]);
 save(d);
 render();
+}
+
+/* تعديل */
+function edit(i){
+let d=get();
+let p=d[i];
+
+editIndex=i;
+
+edit_name.value=p.name;
+edit_gid.value=p.gid;
+edit_disc.value=p.disc;
+edit_rank.value=p.rank;
+edit_unit.value=p.unit;
+
+modal.style.display="flex";
+}
+
+/* حفظ التعديل */
+function saveEdit(){
+let d=get();
+
+d[editIndex].name=edit_name.value;
+d[editIndex].gid=edit_gid.value;
+d[editIndex].disc=edit_disc.value;
+d[editIndex].rank=edit_rank.value;
+d[editIndex].unit=edit_unit.value; // 🔥 يونت مضبوط
+
+save(d);
+closeModal();
+render();
+}
+
+/* إغلاق */
+function closeModal(){
+modal.style.display="none";
 }
 
 /* عرض */
@@ -221,7 +287,6 @@ function render(){
 
 let d=get();
 
-/* ترتيب حسب الرتبة */
 d.sort((a,b)=>ranks.indexOf(a.rank)-ranks.indexOf(b.rank));
 
 army.innerHTML=d.map((p,i)=>`
@@ -232,6 +297,7 @@ army.innerHTML=d.map((p,i)=>`
 <div class="tag">🎖 ${p.rank}</div>
 <div class="tag">🚓 ${p.unit}</div>
 <div class="tag">🆔 ${p.gid}</div>
+<div class="tag">💬 ${p.disc}</div>
 
 <div class="tag">⭐ ${p.points}</div>
 <div class="tag">⚠ ${p.warn}</div>
@@ -239,6 +305,7 @@ army.innerHTML=d.map((p,i)=>`
 <div style="margin-top:5px">
 <button class="primary" onclick="addPoint(${i})">⭐</button>
 <button class="warn" onclick="addWarn(${i})">⚠</button>
+<button class="primary" onclick="edit(${i})">✏</button>
 </div>
 
 </div>
