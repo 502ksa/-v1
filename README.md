@@ -184,7 +184,7 @@ fillSelect(arr);
 });
 }
 
-/* ➕ إضافة عسكري */
+/* ➕ إضافة */
 function add(){
 
 db.ref("players").push({
@@ -235,9 +235,8 @@ db.ref("players/"+id).set(p);
 });
 }
 
-/* 📝 إضافة ملاحظة */
+/* 📝 ملاحظة */
 function addNote(){
-
 let id = noteSelect.value;
 let text = noteText.value.trim();
 
@@ -245,68 +244,57 @@ if(!id || !text) return;
 
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
-
 if(!p.notes) p.notes=[];
-
-p.notes.push({
-text,
-time:new Date().toLocaleString("ar")
-});
-
+p.notes.push({text,time:new Date().toLocaleString("ar")});
 db.ref("players/"+id).set(p);
 noteText.value="";
 });
 }
 
-/* تعبئة اختيار */
+/* تعبئة */
 function fillSelect(d){
-noteSelect.innerHTML = d
-.map(p=>`<option value="${p.id}">${p.name}</option>`)
-.join("");
+noteSelect.innerHTML=d.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
 }
 
-/* 👮 العسكريين */
+/* 👮 العسكريين (التعديل هنا فقط) */
 function renderArmy(d){
 armyList.innerHTML=d.map(p=>`
 <div class="card">
-<b>${p.name}</b><br>
+<b>${p.name} - ${p.gid}</b><br>
 🎖 ${p.rank} | 🚓 ${p.unit}<br><br>
 
-<button class="primary" onclick="addPoint('${p.id}')">⭐ نقطة</button>
-<button class="warn" onclick="addWarn('${p.id}')">⚠ تحذير</button>
+<button class="primary" onclick="addPoint('${p.id}')">⭐</button>
+<button class="warn" onclick="addWarn('${p.id}')">⚠</button>
 <button class="primary" onclick="editPlayer('${p.id}')">✏ تعديل</button>
 <button class="danger" onclick="deletePlayer('${p.id}')">🗑 حذف</button>
 </div>
 `).join("");
 }
 
-/* ⭐ النقاط */
+/* نقاط */
 function renderPoints(d){
 points.innerHTML=d.map(p=>`
 <div class="card">${p.name} ⭐ ${p.points}</div>
 `).join("");
 }
 
-/* ⚠ التحذيرات */
+/* تحذيرات */
 function renderWarns(d){
 warns.innerHTML=d.map(p=>`
 <div class="card">${p.name} ⚠ ${p.warn}</div>
 `).join("");
 }
 
-/* 📝 الملاحظات (فقط اللي عنده ملاحظات) */
+/* ملاحظات */
 function renderNotes(d){
-
-notesList.innerHTML = d
-.filter(p => p.notes && p.notes.length > 0)
-.map(p => `
+notesList.innerHTML=d
+.filter(p=>p.notes && p.notes.length>0)
+.map(p=>`
 <div class="card">
 <b>${p.name}</b><br>
 
 ${p.notes.map((n,i)=>`
-📝 ${n.text} - ${n.time}
-<button class="primary" onclick="editNote('${p.id}',${i})">تعديل</button>
-<button class="danger" onclick="deleteNote('${p.id}',${i})">حذف</button><br>
+📝 ${n.text} - ${n.time}<br>
 `).join("")}
 
 </div>
@@ -318,8 +306,8 @@ function editPlayer(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
 
-let n = prompt("اسم",p.name);
-let g = prompt("ID",p.gid);
+let n=prompt("اسم",p.name);
+let g=prompt("ID",p.gid);
 
 if(n) p.name=n;
 if(g) p.gid=g;
@@ -333,31 +321,6 @@ function deletePlayer(id){
 if(confirm("حذف العسكري؟")){
 db.ref("players/"+id).remove();
 }
-}
-
-/* تعديل ملاحظة */
-function editNote(pid,i){
-db.ref("players/"+pid).once("value",snap=>{
-let p=snap.val();
-
-let t = prompt("تعديل الملاحظة",p.notes[i].text);
-
-if(t){
-p.notes[i].text=t;
-db.ref("players/"+pid).set(p);
-}
-});
-}
-
-/* حذف ملاحظة */
-function deleteNote(pid,i){
-db.ref("players/"+pid).once("value",snap=>{
-let p=snap.val();
-
-p.notes.splice(i,1);
-
-db.ref("players/"+pid).set(p);
-});
 }
 
 </script>
