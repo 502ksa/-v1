@@ -41,8 +41,13 @@ cursor:pointer;
 .card{background:#111827;padding:10px;margin:10px 0;border-radius:10px}
 
 input,select{
-width:100%;padding:10px;margin:5px 0;
-background:#0a0e14;color:#fff;border:none;border-radius:8px;
+width:100%;
+padding:10px;
+margin:5px 0;
+background:#0a0e14;
+color:#fff;
+border:none;
+border-radius:8px;
 }
 
 button{padding:8px;border:none;border-radius:8px;cursor:pointer}
@@ -84,6 +89,7 @@ button{padding:8px;border:none;border-radius:8px;cursor:pointer}
 <!-- إضافة -->
 <div class="card">
 <h3>➕ إضافة عسكري</h3>
+
 <input id="name" placeholder="اسم">
 <input id="gid" placeholder="Game ID">
 <input id="disc" placeholder="Discord">
@@ -136,11 +142,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-/* 🔐 دخول */
+/* 🔐 تسجيل دخول */
 function login(){
-if(pass.value==="0008"){
-loginBox.classList.add("hidden");
-app.classList.remove("hidden");
+if(document.getElementById("pass").value==="0008"){
+document.getElementById("loginBox").classList.add("hidden");
+document.getElementById("app").classList.remove("hidden");
 }else alert("خطأ");
 }
 
@@ -152,7 +158,8 @@ const ranks=[
 ];
 
 window.onload=()=>{
-rank.innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
+document.getElementById("rank").innerHTML =
+ranks.map(r=>`<option>${r}</option>`).join("");
 load();
 loadLogs();
 };
@@ -165,7 +172,7 @@ document.getElementById(id).classList.add("active");
 btn.classList.add("active");
 }
 
-/* سجل عمليات */
+/* سجل */
 function addLog(text){
 db.ref("logs").push({
 text,
@@ -182,30 +189,34 @@ render(arr);
 });
 }
 
-/* إضافة */
+/* ⭐ إضافة (مُصلح 100%) */
 function add(){
 
-if(!name.value||!gid.value){
-alert("اسم + ID");
+let n = document.getElementById("name").value.trim();
+let g = document.getElementById("gid").value.trim();
+let d = document.getElementById("disc").value.trim();
+
+if(!n || !g){
+alert("لازم الاسم + Game ID");
 return;
 }
 
 db.ref("players").push({
-name:name.value,
-gid:gid.value,
-disc:disc.value||"لا يوجد",
-rank:rank.value,
-unit:unit.value,
-points:0,
-warn:0,
-notes:[]
+name: n,
+gid: g,
+disc: d || "لا يوجد",
+rank: document.getElementById("rank").value,
+unit: document.getElementById("unit").value,
+points: 0,
+warn: 0,
+notes: []
 });
 
-addLog("تم إضافة عسكري: " + name.value);
+addLog("تم إضافة عسكري: " + n);
 
-name.value="";
-gid.value="";
-disc.value="";
+document.getElementById("name").value="";
+document.getElementById("gid").value="";
+document.getElementById("disc").value="";
 }
 
 /* ⭐ نقاط */
@@ -287,23 +298,23 @@ logs.innerHTML=arr.map(l=>`
 </div>
 `).join("");
 });
+}
 
 /* بحث */
-}
 function find(){
 db.ref("players").once("value",snap=>{
 let d=Object.values(snap.val()||{});
-let q=search.value;
+let q=document.getElementById("search").value;
 
 let p=d.find(x=>x.name.includes(q));
 
-result.innerHTML=p?`
+document.getElementById("result").innerHTML = p ? `
 <div class="card">
 <b>${p.name}</b><br>
 🎖 ${p.rank}<br>
 🚓 ${p.unit}
 </div>
-`:"غير موجود";
+` : "غير موجود";
 });
 }
 
