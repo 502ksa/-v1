@@ -6,7 +6,21 @@
 <title>وزارة الداخلية - Velora RP</title>
 
 <style>
-body{margin:0;font-family:Tahoma;background:#070b14;color:#fff}
+/* 🌌 خلفية متحركة فخمة */
+body{
+margin:0;
+font-family:Tahoma;
+color:#fff;
+background: linear-gradient(-45deg,#050814,#0b1220,#0a0e1a,#050816);
+background-size:400% 400%;
+animation:moveBg 12s ease infinite;
+}
+
+@keyframes moveBg{
+0%{background-position:0% 50%}
+50%{background-position:100% 50%}
+100%{background-position:0% 50%}
+}
 
 header{
 background:#0f172a;
@@ -38,7 +52,7 @@ cursor:pointer;
 
 .container{max-width:1100px;margin:auto;padding:12px}
 
-.card{background:#111827;padding:10px;margin:10px 0;border-radius:10px}
+.card{background:#111827cc;padding:10px;margin:10px 0;border-radius:10px;backdrop-filter: blur(5px);}
 
 input,select{
 width:100%;
@@ -86,7 +100,6 @@ button{padding:8px;border:none;border-radius:8px;cursor:pointer}
 
 <div class="container">
 
-<!-- إضافة -->
 <div class="card">
 <h3>➕ إضافة عسكري</h3>
 
@@ -106,7 +119,6 @@ button{padding:8px;border:none;border-radius:8px;cursor:pointer}
 <button class="primary" onclick="add()">إضافة</button>
 </div>
 
-<!-- بحث -->
 <div class="card">
 <h3>🔎 بحث</h3>
 <input id="search" placeholder="اسم">
@@ -142,11 +154,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-/* 🔐 تسجيل دخول */
+/* 🔐 دخول */
 function login(){
 if(document.getElementById("pass").value==="0008"){
-document.getElementById("loginBox").classList.add("hidden");
-document.getElementById("app").classList.remove("hidden");
+loginBox.classList.add("hidden");
+app.classList.remove("hidden");
 }else alert("خطأ");
 }
 
@@ -189,27 +201,30 @@ render(arr);
 });
 }
 
-/* ⭐ إضافة (مُصلح 100%) */
+/* 🚨 FIX نهائي للإضافة */
 function add(){
 
-let n = document.getElementById("name").value.trim();
-let g = document.getElementById("gid").value.trim();
-let d = document.getElementById("disc").value.trim();
+let n = (document.getElementById("name").value || "").trim();
+let g = (document.getElementById("gid").value || "").trim();
+let d = (document.getElementById("disc").value || "").trim();
 
-if(!n || !g){
+console.log("DEBUG NAME:", n);
+console.log("DEBUG ID:", g);
+
+if(n === "" || g === ""){
 alert("لازم الاسم + Game ID");
 return;
 }
 
 db.ref("players").push({
-name: n,
-gid: g,
-disc: d || "لا يوجد",
-rank: document.getElementById("rank").value,
-unit: document.getElementById("unit").value,
-points: 0,
-warn: 0,
-notes: []
+name:n,
+gid:g,
+disc:d || "لا يوجد",
+rank:document.getElementById("rank").value,
+unit:document.getElementById("unit").value,
+points:0,
+warn:0,
+notes:[]
 });
 
 addLog("تم إضافة عسكري: " + n);
@@ -219,7 +234,7 @@ document.getElementById("gid").value="";
 document.getElementById("disc").value="";
 }
 
-/* ⭐ نقاط */
+/* ⭐ */
 function addPoint(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
@@ -229,7 +244,7 @@ addLog("نقطة لـ: " + p.name);
 });
 }
 
-/* ⚠ تحذير + ملاحظة */
+/* ⚠ */
 function addWarn(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
@@ -298,9 +313,9 @@ logs.innerHTML=arr.map(l=>`
 </div>
 `).join("");
 });
-}
 
 /* بحث */
+}
 function find(){
 db.ref("players").once("value",snap=>{
 let d=Object.values(snap.val()||{});
