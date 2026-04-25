@@ -21,26 +21,10 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 .section{display:none}
 .section.active{display:block}
 .smallTag{display:inline-block;background:#1f2937;padding:3px 6px;border-radius:6px;font-size:12px;margin:2px}
-
-/* login */
-#loginBox{
-position:fixed;top:0;left:0;width:100%;height:100%;
-background:#000a;display:flex;justify-content:center;align-items:center;z-index:9999;
-}
-.loginCard{background:#111827;padding:20px;border-radius:12px;width:300px;text-align:center;}
 </style>
 </head>
 
 <body>
-
-<!-- LOGIN -->
-<div id="loginBox">
-<div class="loginCard">
-<h3>🔐 دخول</h3>
-<input type="password" id="pass" placeholder="0008">
-<button class="primary" onclick="login()">دخول</button>
-</div>
-</div>
 
 <header>🏛️ وزارة الداخلية</header>
 
@@ -53,29 +37,30 @@ background:#000a;display:flex;justify-content:center;align-items:center;z-index:
 
 <div class="container">
 
-<!-- الجيش -->
+<!-- العسكريين -->
 <div id="army" class="section active">
 
 <div class="card">
 <h3>➕ إضافة عسكري</h3>
 <input id="name" placeholder="اسم">
-<input id="gid" placeholder="ID">
+<input id="gid" placeholder="Game ID">
+
 <select id="rank"></select>
+
 <select id="unit">
+<option>قوات طوارئ</option>
 <option>أمن عام</option>
-<option>قوات الطوارئ</option>
+<option>المرور</option>
 <option>SWAT</option>
 </select>
+
 <button class="primary" onclick="add()">إضافة</button>
 </div>
 
 <div id="armyList"></div>
 </div>
 
-<!-- النقاط -->
 <div id="points" class="section"></div>
-
-<!-- التحذيرات -->
 <div id="warns" class="section"></div>
 
 <!-- الملاحظات -->
@@ -84,7 +69,7 @@ background:#000a;display:flex;justify-content:center;align-items:center;z-index:
 <div class="card">
 <h3>➕ إضافة ملاحظة</h3>
 <select id="noteSelect"></select>
-<input id="noteText">
+<input id="noteText" placeholder="اكتب الملاحظة">
 <button class="primary" onclick="addNote()">إضافة</button>
 </div>
 
@@ -99,13 +84,6 @@ background:#000a;display:flex;justify-content:center;align-items:center;z-index:
 
 <script>
 
-/* login */
-function login(){
-if(pass.value==="0008"){
-loginBox.style.display="none";
-}else alert("خطأ");
-}
-
 const firebaseConfig = {
 apiKey:"AIzaSyBw9V3yMuiUa5MgurcxW2V1RCImC6eHcGQ",
 authDomain:"velora-rp.firebaseapp.com",
@@ -119,6 +97,7 @@ appId:"1:681356163114:web:c40b8d7fed229ce8e7eb53"
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
+/* 🔧 الرتب (تم إضافة رئيس رقباء فقط) */
 const ranks=[
 "فريق أول","فريق","لواء","عميد","عقيد","مقدم",
 "رائد","نقيب","ملازم أول","ملازم",
@@ -126,7 +105,7 @@ const ranks=[
 ];
 
 window.onload=()=>{
-rank.innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
+document.getElementById("rank").innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
 load();
 };
 
@@ -137,11 +116,13 @@ document.getElementById(id).classList.add("active");
 btn.classList.add("active");
 }
 
-/* تحميل */
 function load(){
 db.ref("players").on("value",snap=>{
-let arr=Object.entries(snap.val()||{}).map(([id,v])=>({id,...v}));
+let data=snap.val()||{};
+let arr=Object.entries(data).map(([id,v])=>({id,...v}));
+
 arr.sort((a,b)=>ranks.indexOf(a.rank)-ranks.indexOf(b.rank));
+
 renderArmy(arr);
 renderPoints(arr);
 renderWarns(arr);
@@ -150,49 +131,73 @@ fillSelect(arr);
 });
 }
 
-/* إضافة عسكري */
+/* إضافة */
 function add(){
+let n=document.getElementById("name").value.trim();
+let g=document.getElementById("gid").value.trim();
+let r=document.getElementById("rank").value;
+let u=document.getElementById("unit").value;
+
+if(!n) n="بدون اسم";
+if(!g) g="بدون ID";
+
 db.ref("players").push({
-name:name.value||"بدون اسم",
-gid:gid.value||"بدون ID",
-rank:rank.value,
-unit:unit.value,
+name:n,
+gid:g,
+rank:r,
+unit:u,
 points:0,
 warn:0,
 notes:[]
 });
-name.value="";gid.value="";
+
+document.getElementById("name").value="";
+document.getElementById("gid").value="";
 }
 
-/* تعديل شامل */
+/* تعديل العسكري (اسم + ID + رتبة + قطاع فقط) */
 function editPlayer(id){
-db.ref("players/"+id).once("value",s=>{
-let p=s.val();
-p.name=prompt("اسم",p.name)||p.name;
-p.gid=prompt("ID",p.gid)||p.gid;
-p.rank=prompt("رتبة",p.rank)||p.rank;
-p.unit=prompt("قطاع",p.unit)||p.unit;
+db.ref("players/"+id).once("value",snap=>{
+let p=snap.val();
+
+let n=prompt("اسم",p.name);
+let g=prompt("ID",p.gid);
+let r=prompt("رتبة",p.rank);
+let u=prompt("قطاع",p.unit);
+
+if(n) p.name=n;
+if(g) p.gid=g;
+if(r) p.rank=r;
+if(u) p.unit=u;
+
 db.ref("players/"+id).set(p);
 });
 }
 
 /* حذف عسكري */
 function deletePlayer(id){
-if(confirm("حذف؟")) db.ref("players/"+id).remove();
+if(confirm("حذف العسكري؟")){
+db.ref("players/"+id).remove();
+}
 }
 
 /* نقاط */
 function addPoint(id){
-db.ref("players/"+id).once("value",s=>{
-let p=s.val();
+db.ref("players/"+id).once("value",snap=>{
+let p=snap.val();
 p.points++;
-if(p.points>=3){p.points=0;let i=ranks.indexOf(p.rank);if(i>0)p.rank=ranks[i-1];}
+if(p.points>=3){
+p.points=0;
+let i=ranks.indexOf(p.rank);
+if(i>0)p.rank=ranks[i-1];
+}
 db.ref("players/"+id).set(p);
 });
 }
+
 function removePoint(id){
-db.ref("players/"+id).once("value",s=>{
-let p=s.val();
+db.ref("players/"+id).once("value",snap=>{
+let p=snap.val();
 if(p.points>0)p.points--;
 db.ref("players/"+id).set(p);
 });
@@ -200,16 +205,21 @@ db.ref("players/"+id).set(p);
 
 /* تحذيرات */
 function addWarn(id){
-db.ref("players/"+id).once("value",s=>{
-let p=s.val();
+db.ref("players/"+id).once("value",snap=>{
+let p=snap.val();
 p.warn++;
-if(p.warn>=3){p.warn=0;let i=ranks.indexOf(p.rank);if(i<ranks.length-1)p.rank=ranks[i+1];}
+if(p.warn>=3){
+p.warn=0;
+let i=ranks.indexOf(p.rank);
+if(i<ranks.length-1)p.rank=ranks[i+1];
+}
 db.ref("players/"+id).set(p);
 });
 }
+
 function removeWarn(id){
-db.ref("players/"+id).once("value",s=>{
-let p=s.val();
+db.ref("players/"+id).once("value",snap=>{
+let p=snap.val();
 if(p.warn>0)p.warn--;
 db.ref("players/"+id).set(p);
 });
@@ -221,14 +231,15 @@ armyList.innerHTML=d.map(p=>`
 <div class="card">
 <b>${p.name}</b><br>
 <span class="smallTag">🆔 ${p.gid}</span>
-<span class="smallTag">${p.rank}</span>
-<span class="smallTag">${p.unit}</span>
-<br>
-<button onclick="addPoint('${p.id}')">⭐</button>
-<button onclick="addWarn('${p.id}')">⚠</button>
-<button onclick="editPlayer('${p.id}')">✏</button>
-<button onclick="deletePlayer('${p.id}')">🗑</button>
-</div>`).join("");
+<span class="smallTag">🎖 ${p.rank}</span>
+<span class="smallTag">🚓 ${p.unit}</span>
+<br><br>
+<button class="primary" onclick="addPoint('${p.id}')">⭐</button>
+<button class="warn" onclick="addWarn('${p.id}')">⚠</button>
+<button class="primary" onclick="editPlayer('${p.id}')">✏ تعديل</button>
+<button class="danger" onclick="deletePlayer('${p.id}')">🗑 حذف</button>
+</div>
+`).join("");
 }
 
 /* نقاط */
@@ -236,10 +247,11 @@ function renderPoints(d){
 let f=d.filter(p=>p.points>0);
 points.innerHTML=f.length?f.map(p=>`
 <div class="card">
-${p.name} ⭐ ${p.points}
+<b>${p.name}</b> ⭐ ${p.points}
+<br>
 <button onclick="addPoint('${p.id}')">➕</button>
 <button onclick="removePoint('${p.id}')">➖</button>
-</div>`).join(""):"<div class='card'>لا يوجد</div>";
+</div>`).join(""):"<div class='card'>لا يوجد نقاط</div>";
 }
 
 /* تحذيرات */
@@ -247,13 +259,14 @@ function renderWarns(d){
 let f=d.filter(p=>p.warn>0);
 warns.innerHTML=f.length?f.map(p=>`
 <div class="card">
-${p.name} ⚠ ${p.warn}
+<b>${p.name}</b> ⚠ ${p.warn}
+<br>
 <button onclick="addWarn('${p.id}')">➕</button>
 <button onclick="removeWarn('${p.id}')">➖</button>
-</div>`).join(""):"<div class='card'>لا يوجد</div>";
+</div>`).join(""):"<div class='card'>لا يوجد تحذيرات</div>";
 }
 
-/* ملاحظات (FIX كامل) */
+/* ملاحظات */
 function renderNotes(d){
 notesList.innerHTML=d.filter(p=>p.notes&&p.notes.length>0).map(p=>`
 <div class="card">
@@ -266,14 +279,13 @@ ${p.notes.map((n,i)=>`
 </div>`).join("");
 }
 
-/* إضافة ملاحظة */
 function addNote(){
 let id=noteSelect.value;
 let text=noteText.value.trim();
 if(!id||!text)return;
 
-db.ref("players/"+id).once("value",s=>{
-let p=s.val();
+db.ref("players/"+id).once("value",snap=>{
+let p=snap.val();
 if(!p.notes)p.notes=[];
 p.notes.push({text});
 db.ref("players/"+id).set(p);
@@ -281,25 +293,22 @@ noteText.value="";
 });
 }
 
-/* تعديل ملاحظة */
-function editNote(id,i){
-db.ref("players/"+id).once("value",s=>{
-let p=s.val();
+function editNote(pid,i){
+db.ref("players/"+pid).once("value",snap=>{
+let p=snap.val();
 let t=prompt("تعديل",p.notes[i].text);
-if(t){p.notes[i].text=t;db.ref("players/"+id).set(p);}
+if(t){p.notes[i].text=t;db.ref("players/"+pid).set(p);}
 });
 }
 
-/* حذف ملاحظة */
-function deleteNote(id,i){
-db.ref("players/"+id).once("value",s=>{
-let p=s.val();
+function deleteNote(pid,i){
+db.ref("players/"+pid).once("value",snap=>{
+let p=snap.val();
 p.notes.splice(i,1);
-db.ref("players/"+id).set(p);
+db.ref("players/"+pid).set(p);
 });
 }
 
-/* اختيار */
 function fillSelect(d){
 noteSelect.innerHTML=d.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
 }
