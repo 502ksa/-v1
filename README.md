@@ -22,34 +22,22 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 .section.active{display:block}
 .smallTag{display:inline-block;background:#1f2937;padding:3px 6px;border-radius:6px;font-size:12px;margin:2px}
 
-/* تسجيل دخول */
+/* login */
 #loginBox{
-position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:#000a;
-display:flex;
-justify-content:center;
-align-items:center;
-z-index:9999;
+position:fixed;top:0;left:0;width:100%;height:100%;
+background:#000a;display:flex;justify-content:center;align-items:center;z-index:9999;
 }
-.loginCard{
-background:#111827;
-padding:20px;
-border-radius:12px;
-width:300px;
-text-align:center;
-}
+.loginCard{background:#111827;padding:20px;border-radius:12px;width:300px;text-align:center;}
 </style>
 </head>
 
 <body>
 
-<!-- تسجيل الدخول -->
+<!-- LOGIN -->
 <div id="loginBox">
 <div class="loginCard">
-<h3>🔐 دخول المسؤولين</h3>
-<input type="password" id="pass" placeholder="الباسورد">
+<h3>🔐 دخول</h3>
+<input type="password" id="pass" placeholder="0008">
 <button class="primary" onclick="login()">دخول</button>
 </div>
 </div>
@@ -65,38 +53,43 @@ text-align:center;
 
 <div class="container">
 
+<!-- الجيش -->
 <div id="army" class="section active">
 
 <div class="card">
 <h3>➕ إضافة عسكري</h3>
 <input id="name" placeholder="اسم">
-<input id="gid" placeholder="Game ID">
-
+<input id="gid" placeholder="ID">
 <select id="rank"></select>
-
 <select id="unit">
 <option>أمن عام</option>
 <option>قوات الطوارئ</option>
 <option>SWAT</option>
 </select>
-
 <button class="primary" onclick="add()">إضافة</button>
 </div>
 
 <div id="armyList"></div>
 </div>
 
+<!-- النقاط -->
 <div id="points" class="section"></div>
+
+<!-- التحذيرات -->
 <div id="warns" class="section"></div>
 
+<!-- الملاحظات -->
 <div id="notes" class="section">
+
 <div class="card">
 <h3>➕ إضافة ملاحظة</h3>
 <select id="noteSelect"></select>
-<input id="noteText" placeholder="الملاحظة">
+<input id="noteText">
 <button class="primary" onclick="addNote()">إضافة</button>
 </div>
+
 <div id="notesList"></div>
+
 </div>
 
 </div>
@@ -106,17 +99,13 @@ text-align:center;
 
 <script>
 
-/* 🔐 دخول */
+/* login */
 function login(){
-let p=document.getElementById("pass").value;
-if(p==="0008"){
-document.getElementById("loginBox").style.display="none";
-}else{
-alert("الباسورد غلط");
-}
+if(pass.value==="0008"){
+loginBox.style.display="none";
+}else alert("خطأ");
 }
 
-/* 🔥 مهم جدًا — مفتاحك الحقيقي */
 const firebaseConfig = {
 apiKey:"AIzaSyBw9V3yMuiUa5MgurcxW2V1RCImC6eHcGQ",
 authDomain:"velora-rp.firebaseapp.com",
@@ -130,7 +119,6 @@ appId:"1:681356163114:web:c40b8d7fed229ce8e7eb53"
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
-/* الرتب */
 const ranks=[
 "فريق أول","فريق","لواء","عميد","عقيد","مقدم",
 "رائد","نقيب","ملازم أول","ملازم",
@@ -149,14 +137,11 @@ document.getElementById(id).classList.add("active");
 btn.classList.add("active");
 }
 
-/* تحميل البيانات */
+/* تحميل */
 function load(){
 db.ref("players").on("value",snap=>{
-let data=snap.val()||{};
-let arr=Object.entries(data).map(([id,v])=>({id,...v}));
-
+let arr=Object.entries(snap.val()||{}).map(([id,v])=>({id,...v}));
 arr.sort((a,b)=>ranks.indexOf(a.rank)-ranks.indexOf(b.rank));
-
 renderArmy(arr);
 renderPoints(arr);
 renderWarns(arr);
@@ -165,26 +150,69 @@ fillSelect(arr);
 });
 }
 
-/* إضافة (مضمونة) */
+/* إضافة عسكري */
 function add(){
-let n=name.value.trim();
-let g=gid.value.trim();
-
-if(n==="") n="بدون اسم";
-if(g==="") g="بدون ID";
-
 db.ref("players").push({
-name:n,
-gid:g,
+name:name.value||"بدون اسم",
+gid:gid.value||"بدون ID",
 rank:rank.value,
 unit:unit.value,
 points:0,
 warn:0,
 notes:[]
 });
+name.value="";gid.value="";
+}
 
-name.value="";
-gid.value="";
+/* تعديل شامل */
+function editPlayer(id){
+db.ref("players/"+id).once("value",s=>{
+let p=s.val();
+p.name=prompt("اسم",p.name)||p.name;
+p.gid=prompt("ID",p.gid)||p.gid;
+p.rank=prompt("رتبة",p.rank)||p.rank;
+p.unit=prompt("قطاع",p.unit)||p.unit;
+db.ref("players/"+id).set(p);
+});
+}
+
+/* حذف عسكري */
+function deletePlayer(id){
+if(confirm("حذف؟")) db.ref("players/"+id).remove();
+}
+
+/* نقاط */
+function addPoint(id){
+db.ref("players/"+id).once("value",s=>{
+let p=s.val();
+p.points++;
+if(p.points>=3){p.points=0;let i=ranks.indexOf(p.rank);if(i>0)p.rank=ranks[i-1];}
+db.ref("players/"+id).set(p);
+});
+}
+function removePoint(id){
+db.ref("players/"+id).once("value",s=>{
+let p=s.val();
+if(p.points>0)p.points--;
+db.ref("players/"+id).set(p);
+});
+}
+
+/* تحذيرات */
+function addWarn(id){
+db.ref("players/"+id).once("value",s=>{
+let p=s.val();
+p.warn++;
+if(p.warn>=3){p.warn=0;let i=ranks.indexOf(p.rank);if(i<ranks.length-1)p.rank=ranks[i+1];}
+db.ref("players/"+id).set(p);
+});
+}
+function removeWarn(id){
+db.ref("players/"+id).once("value",s=>{
+let p=s.val();
+if(p.warn>0)p.warn--;
+db.ref("players/"+id).set(p);
+});
 }
 
 /* عرض العسكريين */
@@ -193,43 +221,85 @@ armyList.innerHTML=d.map(p=>`
 <div class="card">
 <b>${p.name}</b><br>
 <span class="smallTag">🆔 ${p.gid}</span>
-<span class="smallTag">🎖 ${p.rank}</span>
-<span class="smallTag">🚓 ${p.unit}</span>
-</div>
-`).join("");
+<span class="smallTag">${p.rank}</span>
+<span class="smallTag">${p.unit}</span>
+<br>
+<button onclick="addPoint('${p.id}')">⭐</button>
+<button onclick="addWarn('${p.id}')">⚠</button>
+<button onclick="editPlayer('${p.id}')">✏</button>
+<button onclick="deletePlayer('${p.id}')">🗑</button>
+</div>`).join("");
 }
 
-/* فلترة النقاط */
+/* نقاط */
 function renderPoints(d){
-let f=d.filter(p=>Number(p.points)>0);
-points.innerHTML=f.length?f.map(p=>`<div class="card">${p.name} ⭐ ${p.points}</div>`).join(""):"<div class='card'>لا يوجد</div>";
+let f=d.filter(p=>p.points>0);
+points.innerHTML=f.length?f.map(p=>`
+<div class="card">
+${p.name} ⭐ ${p.points}
+<button onclick="addPoint('${p.id}')">➕</button>
+<button onclick="removePoint('${p.id}')">➖</button>
+</div>`).join(""):"<div class='card'>لا يوجد</div>";
 }
 
-/* فلترة التحذيرات */
+/* تحذيرات */
 function renderWarns(d){
-let f=d.filter(p=>Number(p.warn)>0);
-warns.innerHTML=f.length?f.map(p=>`<div class="card">${p.name} ⚠ ${p.warn}</div>`).join(""):"<div class='card'>لا يوجد</div>";
+let f=d.filter(p=>p.warn>0);
+warns.innerHTML=f.length?f.map(p=>`
+<div class="card">
+${p.name} ⚠ ${p.warn}
+<button onclick="addWarn('${p.id}')">➕</button>
+<button onclick="removeWarn('${p.id}')">➖</button>
+</div>`).join(""):"<div class='card'>لا يوجد</div>";
 }
 
-/* ملاحظات */
+/* ملاحظات (FIX كامل) */
 function renderNotes(d){
 notesList.innerHTML=d.filter(p=>p.notes&&p.notes.length>0).map(p=>`
 <div class="card">
 <b>${p.name}</b><br>
-${p.notes.map(n=>`📝 ${n.text}`).join("<br>")}
-</div>
-`).join("");
+${p.notes.map((n,i)=>`
+📝 ${n.text}
+<button onclick="editNote('${p.id}',${i})">✏</button>
+<button onclick="deleteNote('${p.id}',${i})">🗑</button><br>
+`).join("")}
+</div>`).join("");
 }
 
+/* إضافة ملاحظة */
 function addNote(){
 let id=noteSelect.value;
 let text=noteText.value.trim();
 if(!id||!text)return;
 
-db.ref("players/"+id+"/notes").push({text});
+db.ref("players/"+id).once("value",s=>{
+let p=s.val();
+if(!p.notes)p.notes=[];
+p.notes.push({text});
+db.ref("players/"+id).set(p);
 noteText.value="";
+});
 }
 
+/* تعديل ملاحظة */
+function editNote(id,i){
+db.ref("players/"+id).once("value",s=>{
+let p=s.val();
+let t=prompt("تعديل",p.notes[i].text);
+if(t){p.notes[i].text=t;db.ref("players/"+id).set(p);}
+});
+}
+
+/* حذف ملاحظة */
+function deleteNote(id,i){
+db.ref("players/"+id).once("value",s=>{
+let p=s.val();
+p.notes.splice(i,1);
+db.ref("players/"+id).set(p);
+});
+}
+
+/* اختيار */
 function fillSelect(d){
 noteSelect.innerHTML=d.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
 }
