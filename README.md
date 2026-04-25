@@ -128,7 +128,7 @@ fillSelect(arr);
 });
 }
 
-/* إصلاح الاسم */
+/* إضافة */
 function add(){
 let n=name.value.trim();
 let g=gid.value.trim();
@@ -164,14 +164,6 @@ db.ref("players/"+id).set(p);
 });
 }
 
-function removePoint(id){
-db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-if(p.points>0)p.points--;
-db.ref("players/"+id).set(p);
-});
-}
-
 /* تحذيرات */
 function addWarn(id){
 db.ref("players/"+id).once("value",snap=>{
@@ -186,56 +178,44 @@ db.ref("players/"+id).set(p);
 });
 }
 
-function removeWarn(id){
-db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-if(p.warn>0)p.warn--;
-db.ref("players/"+id).set(p);
-});
-}
-
-/* عرض العسكريين */
+/* 👮 العسكريين (رجعنا التعديل والحذف فقط) */
 function renderArmy(d){
 armyList.innerHTML=d.map(p=>`
 <div class="card">
+
 <b>${p.name}</b><br>
+
 <span class="smallTag">🆔 ${p.gid}</span>
 <span class="smallTag">🎖 ${p.rank}</span>
 <span class="smallTag">🚓 ${p.unit}</span>
+
 <br><br>
+
 <button class="primary" onclick="addPoint('${p.id}')">⭐</button>
 <button class="warn" onclick="addWarn('${p.id}')">⚠</button>
+
+<button class="primary" onclick="editPlayer('${p.id}')">✏ تعديل</button>
+<button class="danger" onclick="deletePlayer('${p.id}')">🗑 حذف</button>
+
 </div>
 `).join("");
 }
 
-/* ⭐ عرض النقاط (فلترة + حذف) */
+/* نقاط */
 function renderPoints(d){
-points.innerHTML=d
-.filter(p=>p.points>0)
-.map(p=>`
-<div class="card">
-${p.name} ⭐ ${p.points}
-<br>
-<button class="danger" onclick="removePoint('${p.id}')">➖ حذف نقطة</button>
-</div>
+points.innerHTML=d.map(p=>`
+<div class="card">${p.name} ⭐ ${p.points}</div>
 `).join("");
 }
 
-/* ⚠ عرض التحذيرات */
+/* تحذيرات */
 function renderWarns(d){
-warns.innerHTML=d
-.filter(p=>p.warn>0)
-.map(p=>`
-<div class="card">
-${p.name} ⚠ ${p.warn}
-<br>
-<button class="danger" onclick="removeWarn('${p.id}')">➖ حذف تحذير</button>
-</div>
+warns.innerHTML=d.map(p=>`
+<div class="card">${p.name} ⚠ ${p.warn}</div>
 `).join("");
 }
 
-/* 📝 الملاحظات (مثل قبل) */
+/* ملاحظات */
 function renderNotes(d){
 notesList.innerHTML=d
 .filter(p=>p.notes&&p.notes.length>0)
@@ -251,6 +231,25 @@ ${p.notes.map((n,i)=>`
 `).join("")}
 </div>
 `).join("");
+}
+
+/* تعديل عسكري */
+function editPlayer(id){
+db.ref("players/"+id).once("value",snap=>{
+let p=snap.val();
+let n=prompt("اسم",p.name);
+let g=prompt("ID",p.gid);
+if(n) p.name=n;
+if(g) p.gid=g;
+db.ref("players/"+id).set(p);
+});
+}
+
+/* حذف عسكري */
+function deletePlayer(id){
+if(confirm("حذف العسكري؟")){
+db.ref("players/"+id).remove();
+}
 }
 
 /* ملاحظات */
