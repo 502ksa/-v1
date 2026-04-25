@@ -44,13 +44,15 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 <h3>➕ إضافة عسكري</h3>
 <input id="name" placeholder="اسم">
 <input id="gid" placeholder="Game ID">
+
 <select id="rank"></select>
+
 <select id="unit">
-<option>قوات طوارئ</option>
 <option>أمن عام</option>
-<option>المرور</option>
-<option>التحقيقات</option>
+<option>قوات الطوارئ</option>
+<option>SWAT</option>
 </select>
+
 <button class="primary" onclick="add()">إضافة</button>
 </div>
 
@@ -94,10 +96,11 @@ appId:"1:681356163114:web:c40b8d7fed229ce8e7eb53"
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
+/* رتب مع رئيس رقباء */
 const ranks=[
 "فريق أول","فريق","لواء","عميد","عقيد","مقدم",
 "رائد","نقيب","ملازم أول","ملازم",
-"رقيب أول","رقيب","وكيل رقيب","عريف","جندي أول","جندي"
+"رئيس رقباء","رقيب أول","رقيب","وكيل رقيب","عريف","جندي أول","جندي"
 ];
 
 window.onload=()=>{
@@ -127,7 +130,7 @@ fillSelect(arr);
 });
 }
 
-/* إضافة (FIX) */
+/* إضافة */
 function add(){
 let n=document.getElementById("name").value.trim();
 let g=document.getElementById("gid").value.trim();
@@ -149,6 +152,32 @@ notes:[]
 
 document.getElementById("name").value="";
 document.getElementById("gid").value="";
+}
+
+/* تعديل شامل */
+function editPlayer(id){
+db.ref("players/"+id).once("value",snap=>{
+let p=snap.val();
+
+let n=prompt("اسم",p.name);
+let g=prompt("ID",p.gid);
+let r=prompt("الرتبة",p.rank);
+let u=prompt("القطاع",p.unit);
+
+if(n) p.name=n;
+if(g) p.gid=g;
+if(r) p.rank=r;
+if(u) p.unit=u;
+
+db.ref("players/"+id).set(p);
+});
+}
+
+/* حذف */
+function deletePlayer(id){
+if(confirm("حذف العسكري؟")){
+db.ref("players/"+id).remove();
+}
 }
 
 /* نقاط */
@@ -195,7 +224,7 @@ db.ref("players/"+id).set(p);
 });
 }
 
-/* العسكريين */
+/* عرض العسكريين */
 function renderArmy(d){
 armyList.innerHTML=d.map(p=>`
 <div class="card">
@@ -212,47 +241,33 @@ armyList.innerHTML=d.map(p=>`
 `).join("");
 }
 
-/* ⭐ النقاط (فلترة صح) */
+/* نقاط */
 function renderPoints(d){
-
-let filtered = d.filter(p => Number(p.points) > 0);
-
-if(filtered.length === 0){
-points.innerHTML = "<div class='card'>لا يوجد نقاط</div>";
-return;
-}
-
-points.innerHTML = filtered.map(p=>`
+let filtered=d.filter(p=>Number(p.points)>0);
+if(filtered.length===0){points.innerHTML="<div class='card'>لا يوجد نقاط</div>";return;}
+points.innerHTML=filtered.map(p=>`
 <div class="card">
-<b>${p.name}</b> ⭐ ${p.points}
-<br>
-<button class="primary" onclick="addPoint('${p.id}')">➕</button>
-<button class="danger" onclick="removePoint('${p.id}')">➖</button>
+${p.name} ⭐ ${p.points}
+<button onclick="addPoint('${p.id}')">➕</button>
+<button onclick="removePoint('${p.id}')">➖</button>
 </div>
 `).join("");
 }
 
-/* ⚠ التحذيرات (فلترة صح) */
+/* تحذيرات */
 function renderWarns(d){
-
-let filtered = d.filter(p => Number(p.warn) > 0);
-
-if(filtered.length === 0){
-warns.innerHTML = "<div class='card'>لا يوجد تحذيرات</div>";
-return;
-}
-
-warns.innerHTML = filtered.map(p=>`
+let filtered=d.filter(p=>Number(p.warn)>0);
+if(filtered.length===0){warns.innerHTML="<div class='card'>لا يوجد تحذيرات</div>";return;}
+warns.innerHTML=filtered.map(p=>`
 <div class="card">
-<b>${p.name}</b> ⚠ ${p.warn}
-<br>
-<button class="warn" onclick="addWarn('${p.id}')">➕</button>
-<button class="danger" onclick="removeWarn('${p.id}')">➖</button>
+${p.name} ⚠ ${p.warn}
+<button onclick="addWarn('${p.id}')">➕</button>
+<button onclick="removeWarn('${p.id}')">➖</button>
 </div>
 `).join("");
 }
 
-/* الملاحظات */
+/* ملاحظات */
 function renderNotes(d){
 notesList.innerHTML=d.filter(p=>p.notes&&p.notes.length>0).map(p=>`
 <div class="card">
@@ -296,25 +311,6 @@ let p=snap.val();
 p.notes.splice(i,1);
 db.ref("players/"+pid).set(p);
 });
-}
-
-/* تعديل عسكري */
-function editPlayer(id){
-db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-let n=prompt("اسم",p.name);
-let g=prompt("ID",p.gid);
-if(n) p.name=n;
-if(g) p.gid=g;
-db.ref("players/"+id).set(p);
-});
-}
-
-/* حذف عسكري */
-function deletePlayer(id){
-if(confirm("حذف العسكري؟")){
-db.ref("players/"+id).remove();
-}
 }
 
 function fillSelect(d){
