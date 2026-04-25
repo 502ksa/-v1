@@ -22,7 +22,7 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 .section.active{display:block}
 .smallTag{display:inline-block;background:#1f2937;padding:3px 6px;border-radius:6px;font-size:12px;margin:2px}
 
-/* شاشة تسجيل الدخول */
+/* تسجيل دخول */
 #loginBox{
 position:fixed;
 top:0;left:0;
@@ -45,11 +45,11 @@ text-align:center;
 
 <body>
 
-<!-- تسجيل دخول -->
+<!-- تسجيل الدخول -->
 <div id="loginBox">
 <div class="loginCard">
-<h3>🔐 تسجيل دخول</h3>
-<input type="password" id="pass" placeholder="ادخل الباسورد">
+<h3>🔐 دخول المسؤولين</h3>
+<input type="password" id="pass" placeholder="الباسورد">
 <button class="primary" onclick="login()">دخول</button>
 </div>
 </div>
@@ -71,12 +71,15 @@ text-align:center;
 <h3>➕ إضافة عسكري</h3>
 <input id="name" placeholder="اسم">
 <input id="gid" placeholder="Game ID">
+
 <select id="rank"></select>
+
 <select id="unit">
 <option>أمن عام</option>
 <option>قوات الطوارئ</option>
 <option>SWAT</option>
 </select>
+
 <button class="primary" onclick="add()">إضافة</button>
 </div>
 
@@ -90,7 +93,7 @@ text-align:center;
 <div class="card">
 <h3>➕ إضافة ملاحظة</h3>
 <select id="noteSelect"></select>
-<input id="noteText" placeholder="اكتب الملاحظة">
+<input id="noteText" placeholder="الملاحظة">
 <button class="primary" onclick="addNote()">إضافة</button>
 </div>
 <div id="notesList"></div>
@@ -103,7 +106,7 @@ text-align:center;
 
 <script>
 
-/* تسجيل دخول */
+/* 🔐 دخول */
 function login(){
 let p=document.getElementById("pass").value;
 if(p==="0008"){
@@ -113,8 +116,9 @@ alert("الباسورد غلط");
 }
 }
 
+/* 🔥 مهم جدًا — مفتاحك الحقيقي */
 const firebaseConfig = {
-apiKey:"AIzaSy...",
+apiKey:"AIzaSyBw9V3yMuiUa5MgurcxW2V1RCImC6eHcGQ",
 authDomain:"velora-rp.firebaseapp.com",
 databaseURL:"https://velora-rp-default-rtdb.europe-west1.firebasedatabase.app",
 projectId:"velora-rp",
@@ -126,6 +130,7 @@ appId:"1:681356163114:web:c40b8d7fed229ce8e7eb53"
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
+/* الرتب */
 const ranks=[
 "فريق أول","فريق","لواء","عميد","عقيد","مقدم",
 "رائد","نقيب","ملازم أول","ملازم",
@@ -133,11 +138,9 @@ const ranks=[
 ];
 
 window.onload=()=>{
-document.getElementById("rank").innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
+rank.innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
 load();
 };
-
-/* باقي الكود مثل ما هو بدون تغيير */
 
 function show(id,btn){
 document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
@@ -146,6 +149,7 @@ document.getElementById(id).classList.add("active");
 btn.classList.add("active");
 }
 
+/* تحميل البيانات */
 function load(){
 db.ref("players").on("value",snap=>{
 let data=snap.val()||{};
@@ -161,7 +165,74 @@ fillSelect(arr);
 });
 }
 
-/* باقي الدوال نفسها بدون تغيير (نفس النسخة السابقة) */
+/* إضافة (مضمونة) */
+function add(){
+let n=name.value.trim();
+let g=gid.value.trim();
+
+if(n==="") n="بدون اسم";
+if(g==="") g="بدون ID";
+
+db.ref("players").push({
+name:n,
+gid:g,
+rank:rank.value,
+unit:unit.value,
+points:0,
+warn:0,
+notes:[]
+});
+
+name.value="";
+gid.value="";
+}
+
+/* عرض العسكريين */
+function renderArmy(d){
+armyList.innerHTML=d.map(p=>`
+<div class="card">
+<b>${p.name}</b><br>
+<span class="smallTag">🆔 ${p.gid}</span>
+<span class="smallTag">🎖 ${p.rank}</span>
+<span class="smallTag">🚓 ${p.unit}</span>
+</div>
+`).join("");
+}
+
+/* فلترة النقاط */
+function renderPoints(d){
+let f=d.filter(p=>Number(p.points)>0);
+points.innerHTML=f.length?f.map(p=>`<div class="card">${p.name} ⭐ ${p.points}</div>`).join(""):"<div class='card'>لا يوجد</div>";
+}
+
+/* فلترة التحذيرات */
+function renderWarns(d){
+let f=d.filter(p=>Number(p.warn)>0);
+warns.innerHTML=f.length?f.map(p=>`<div class="card">${p.name} ⚠ ${p.warn}</div>`).join(""):"<div class='card'>لا يوجد</div>";
+}
+
+/* ملاحظات */
+function renderNotes(d){
+notesList.innerHTML=d.filter(p=>p.notes&&p.notes.length>0).map(p=>`
+<div class="card">
+<b>${p.name}</b><br>
+${p.notes.map(n=>`📝 ${n.text}`).join("<br>")}
+</div>
+`).join("");
+}
+
+function addNote(){
+let id=noteSelect.value;
+let text=noteText.value.trim();
+if(!id||!text)return;
+
+db.ref("players/"+id+"/notes").push({text});
+noteText.value="";
+}
+
+function fillSelect(d){
+noteSelect.innerHTML=d.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+}
 
 </script>
 
