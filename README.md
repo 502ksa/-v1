@@ -37,7 +37,6 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 
 <div class="container">
 
-<!-- العسكريين -->
 <div id="army" class="section active">
 
 <div class="card">
@@ -56,7 +55,6 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 <button class="primary" onclick="add()">إضافة</button>
 </div>
 
-<!-- 🔍 البحث + الفلترة -->
 <div class="card">
 <h3>🔍 البحث والفلترة</h3>
 <input id="search" placeholder="ابحث باسم العسكري..." oninput="applyFilter()">
@@ -66,7 +64,6 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 </select>
 </div>
 
-<!-- 📊 احصائية الرتب -->
 <div class="card">
 <h3>📊 عدد كل رتبة</h3>
 <div id="rankStats"></div>
@@ -78,7 +75,6 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 <div id="points" class="section"></div>
 <div id="warns" class="section"></div>
 
-<!-- الملاحظات -->
 <div id="notes" class="section">
 
 <div class="card">
@@ -122,8 +118,7 @@ let allPlayers=[];
 
 window.onload=()=>{
 document.getElementById("rank").innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
-document.getElementById("rankFilter").innerHTML=
-`<option value="">كل الرتب</option>` + ranks.map(r=>`<option>${r}</option>`).join("");
+document.getElementById("rankFilter").innerHTML=`<option value="">كل الرتب</option>` + ranks.map(r=>`<option>${r}</option>`).join("");
 load();
 };
 
@@ -152,6 +147,30 @@ renderStats(arr);
 });
 }
 
+/* إصلاح زر الإضافة */
+function add(){
+let n=document.getElementById("name").value.trim();
+let g=document.getElementById("gid").value.trim();
+let r=document.getElementById("rank").value;
+let u=document.getElementById("unit").value;
+
+if(!n) n="بدون اسم";
+if(!g) g="بدون ID";
+
+db.ref("players").push({
+name:n,
+gid:g,
+rank:r,
+unit:u,
+points:0,
+warn:0,
+notes:[]
+});
+
+document.getElementById("name").value="";
+document.getElementById("gid").value="";
+}
+
 /* فلترة */
 function applyFilter(){
 let text=document.getElementById("search").value.toLowerCase();
@@ -175,20 +194,10 @@ data.forEach(p=>{
 if(stats[p.rank]!=undefined) stats[p.rank]++;
 });
 
-rankStats.innerHTML=ranks.map(r=>
-`<span class="smallTag">${r} (${stats[r]})</span>`
-).join("");
+rankStats.innerHTML=ranks.map(r=>`<span class="smallTag">${r} (${stats[r]})</span>`).join("");
 }
 
-/* باقي الكود نفسه بدون تغيير */
-
-function add(){
-let n=name.value.trim()||"بدون اسم";
-let g=gid.value.trim()||"بدون ID";
-db.ref("players").push({name:n,gid:g,rank:rank.value,unit:unit.value,points:0,warn:0,notes:[]});
-name.value="";gid.value="";
-}
-
+/* باقي الكود */
 function editPlayer(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
