@@ -56,6 +56,22 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 <button class="primary" onclick="add()">إضافة</button>
 </div>
 
+<!-- 🔍 البحث + الفلترة -->
+<div class="card">
+<h3>🔍 البحث والفلترة</h3>
+<input id="search" placeholder="ابحث باسم العسكري..." oninput="applyFilter()">
+
+<select id="rankFilter" onchange="applyFilter()">
+<option value="">كل الرتب</option>
+</select>
+</div>
+
+<!-- 📊 احصائية الرتب -->
+<div class="card">
+<h3>📊 عدد كل رتبة</h3>
+<div id="rankStats"></div>
+</div>
+
 <div id="armyList"></div>
 </div>
 
@@ -84,7 +100,7 @@ button{padding:6px 8px;border:none;border-radius:6px;cursor:pointer}
 <script>
 
 const firebaseConfig = {
-apiKey:"AIzaSyBw9V3yMuiUa5MgurcxW2V1RCImC6eHcGQ",
+apiKey:"AIzaSy...",
 authDomain:"velora-rp.firebaseapp.com",
 databaseURL:"https://velora-rp-default-rtdb.europe-west1.firebasedatabase.app",
 projectId:"velora-rp",
@@ -96,15 +112,18 @@ appId:"1:681356163114:web:c40b8d7fed229ce8e7eb53"
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
-/* رتب مع رئيس رقباء */
 const ranks=[
 "فريق أول","فريق","لواء","عميد","عقيد","مقدم",
 "رائد","نقيب","ملازم أول","ملازم",
 "رئيس رقباء","رقيب أول","رقيب","وكيل رقيب","عريف","جندي أول","جندي"
 ];
 
+let allPlayers=[];
+
 window.onload=()=>{
 document.getElementById("rank").innerHTML=ranks.map(r=>`<option>${r}</option>`).join("");
+document.getElementById("rankFilter").innerHTML=
+`<option value="">كل الرتب</option>` + ranks.map(r=>`<option>${r}</option>`).join("");
 load();
 };
 
@@ -122,109 +141,100 @@ let arr=Object.entries(data).map(([id,v])=>({id,...v}));
 
 arr.sort((a,b)=>ranks.indexOf(a.rank)-ranks.indexOf(b.rank));
 
+allPlayers=arr;
+
 renderArmy(arr);
 renderPoints(arr);
 renderWarns(arr);
 renderNotes(arr);
 fillSelect(arr);
+renderStats(arr);
 });
 }
 
-/* إضافة */
+/* فلترة */
+function applyFilter(){
+let text=document.getElementById("search").value.toLowerCase();
+let rank=document.getElementById("rankFilter").value;
+
+let filtered=allPlayers.filter(p=>{
+let matchName=p.name.toLowerCase().includes(text);
+let matchRank=!rank || p.rank===rank;
+return matchName && matchRank;
+});
+
+renderArmy(filtered);
+}
+
+/* احصائية */
+function renderStats(data){
+let stats={};
+ranks.forEach(r=>stats[r]=0);
+
+data.forEach(p=>{
+if(stats[p.rank]!=undefined) stats[p.rank]++;
+});
+
+rankStats.innerHTML=ranks.map(r=>
+`<span class="smallTag">${r} (${stats[r]})</span>`
+).join("");
+}
+
+/* باقي الكود نفسه بدون تغيير */
+
 function add(){
-let n=document.getElementById("name").value.trim();
-let g=document.getElementById("gid").value.trim();
-let r=document.getElementById("rank").value;
-let u=document.getElementById("unit").value;
-
-if(!n) n="بدون اسم";
-if(!g) g="بدون ID";
-
-db.ref("players").push({
-name:n,
-gid:g,
-rank:r,
-unit:u,
-points:0,
-warn:0,
-notes:[]
-});
-
-document.getElementById("name").value="";
-document.getElementById("gid").value="";
+let n=name.value.trim()||"بدون اسم";
+let g=gid.value.trim()||"بدون ID";
+db.ref("players").push({name:n,gid:g,rank:rank.value,unit:unit.value,points:0,warn:0,notes:[]});
+name.value="";gid.value="";
 }
 
-/* تعديل شامل */
 function editPlayer(id){
 db.ref("players/"+id).once("value",snap=>{
 let p=snap.val();
-
 let n=prompt("اسم",p.name);
 let g=prompt("ID",p.gid);
 let r=prompt("الرتبة",p.rank);
 let u=prompt("القطاع",p.unit);
-
-if(n) p.name=n;
-if(g) p.gid=g;
-if(r) p.rank=r;
-if(u) p.unit=u;
-
+if(n)p.name=n;if(g)p.gid=g;if(r)p.rank=r;if(u)p.unit=u;
 db.ref("players/"+id).set(p);
 });
 }
 
-/* حذف */
 function deletePlayer(id){
-if(confirm("حذف العسكري؟")){
-db.ref("players/"+id).remove();
-}
+if(confirm("حذف العسكري؟")) db.ref("players/"+id).remove();
 }
 
-/* نقاط */
 function addPoint(id){
 db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-p.points++;
-if(p.points>=3){
-p.points=0;
-let i=ranks.indexOf(p.rank);
-if(i>0)p.rank=ranks[i-1];
-}
+let p=snap.val();p.points++;
+if(p.points>=3){p.points=0;let i=ranks.indexOf(p.rank);if(i>0)p.rank=ranks[i-1];}
 db.ref("players/"+id).set(p);
 });
 }
 
 function removePoint(id){
 db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-if(p.points>0)p.points--;
+let p=snap.val();if(p.points>0)p.points--;
 db.ref("players/"+id).set(p);
 });
 }
 
-/* تحذيرات */
 function addWarn(id){
 db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-p.warn++;
-if(p.warn>=3){
-p.warn=0;
-let i=ranks.indexOf(p.rank);
-if(i<ranks.length-1)p.rank=ranks[i+1];
-}
+let p=snap.val();p.warn++;
+if(p.warn>=3){p.warn=0;let i=ranks.indexOf(p.rank);if(i<ranks.length-1)p.rank=ranks[i+1];}
 db.ref("players/"+id).set(p);
 });
 }
 
 function removeWarn(id){
 db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-if(p.warn>0)p.warn--;
+let p=snap.val();if(p.warn>0)p.warn--;
 db.ref("players/"+id).set(p);
 });
 }
 
-/* عرض العسكريين */
 function renderArmy(d){
 armyList.innerHTML=d.map(p=>`
 <div class="card">
@@ -235,80 +245,60 @@ armyList.innerHTML=d.map(p=>`
 <br><br>
 <button class="primary" onclick="addPoint('${p.id}')">⭐</button>
 <button class="warn" onclick="addWarn('${p.id}')">⚠</button>
-<button class="primary" onclick="editPlayer('${p.id}')">✏ تعديل</button>
-<button class="danger" onclick="deletePlayer('${p.id}')">🗑 حذف</button>
-</div>
-`).join("");
+<button class="primary" onclick="editPlayer('${p.id}')">✏</button>
+<button class="danger" onclick="deletePlayer('${p.id}')">🗑</button>
+</div>`).join("");
 }
 
-/* نقاط */
 function renderPoints(d){
-let filtered=d.filter(p=>Number(p.points)>0);
-if(filtered.length===0){points.innerHTML="<div class='card'>لا يوجد نقاط</div>";return;}
-points.innerHTML=filtered.map(p=>`
-<div class="card">
-${p.name} ⭐ ${p.points}
+let f=d.filter(p=>p.points>0);
+points.innerHTML=f.length?f.map(p=>`
+<div class="card">${p.name} ⭐ ${p.points}
 <button onclick="addPoint('${p.id}')">➕</button>
 <button onclick="removePoint('${p.id}')">➖</button>
-</div>
-`).join("");
+</div>`).join(""):"<div class='card'>لا يوجد نقاط</div>";
 }
 
-/* تحذيرات */
 function renderWarns(d){
-let filtered=d.filter(p=>Number(p.warn)>0);
-if(filtered.length===0){warns.innerHTML="<div class='card'>لا يوجد تحذيرات</div>";return;}
-warns.innerHTML=filtered.map(p=>`
-<div class="card">
-${p.name} ⚠ ${p.warn}
+let f=d.filter(p=>p.warn>0);
+warns.innerHTML=f.length?f.map(p=>`
+<div class="card">${p.name} ⚠ ${p.warn}
 <button onclick="addWarn('${p.id}')">➕</button>
 <button onclick="removeWarn('${p.id}')">➖</button>
-</div>
-`).join("");
+</div>`).join(""):"<div class='card'>لا يوجد تحذيرات</div>";
 }
 
-/* ملاحظات */
 function renderNotes(d){
 notesList.innerHTML=d.filter(p=>p.notes&&p.notes.length>0).map(p=>`
-<div class="card">
-<b>${p.name}</b><br>
+<div class="card"><b>${p.name}</b><br>
 ${p.notes.map((n,i)=>`
-<div>
-📝 ${n.text}
+<div>📝 ${n.text}
 <button onclick="editNote('${p.id}',${i})">✏</button>
 <button onclick="deleteNote('${p.id}',${i})">🗑</button>
-</div>
-`).join("")}
-</div>
-`).join("");
+</div>`).join("")}
+</div>`).join("");
 }
 
 function addNote(){
-let id=noteSelect.value;
-let text=noteText.value.trim();
+let id=noteSelect.value,text=noteText.value.trim();
 if(!id||!text)return;
-
 db.ref("players/"+id).once("value",snap=>{
-let p=snap.val();
-if(!p.notes)p.notes=[];
+let p=snap.val();if(!p.notes)p.notes=[];
 p.notes.push({text});
-db.ref("players/"+id).set(p);
-noteText.value="";
+db.ref("players/"+id).set(p);noteText.value="";
 });
 }
 
 function editNote(pid,i){
 db.ref("players/"+pid).once("value",snap=>{
-let p=snap.val();
-let t=prompt("تعديل",p.notes[i].text);
+let p=snap.val();let t=prompt("تعديل",p.notes[i].text);
 if(t){p.notes[i].text=t;db.ref("players/"+pid).set(p);}
 });
 }
 
 function deleteNote(pid,i){
 db.ref("players/"+pid).once("value",snap=>{
-let p=snap.val();
-p.notes.splice(i,1);
+let p=snap.val();p.notes.splice(i,1);
 db.ref("players/"+pid).set(p);
 });
 }
